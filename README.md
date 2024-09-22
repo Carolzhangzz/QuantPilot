@@ -1,31 +1,11 @@
-# Frontend Diffusion: Exploring Intent-Based User Interfaces through Sketching to Coding Task Transition
+# Datavis Diffusion: Exploring Intent-Based User Interfaces through Sketching to Coding Task Transition
 
 <p align="center">
-  <a href="https://github.com/Carolzhangzz/frontendiffusion/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
-  <a href="https://github.com/Carolzhangzz/FD/stargazers"><img src="https://img.shields.io/github/stars/Carolzhangzz/frontendiffusion" alt="GitHub Stars"></a>
-  <a href="https://github.com/Carolzhangzz/FD/fork"><img src="https://img.shields.io/github/forks/Carolzhangzz/frontendiffusion" alt="GitHub Forks"></a>
+  <a href="https://github.com/Carolzhangzz/DatavisDiffusion_Frontend/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
+  <a href="https://github.com/Carolzhangzz/DatavisDiffusion_Frontend/stargazers"><img src="https://img.shields.io/github/stars/Carolzhangzz/DatavisDiffusion_Frontend" alt="GitHub Stars"></a>
+  <a href="https://github.com/Carolzhangzz/DatavisDiffusion_Frontend/fork"><img src="https://img.shields.io/github/forks/Carolzhangzz/DatavisDiffusion_Frontend" alt="GitHub Forks"></a>
 </p>
 
-<p align="center">
-  <img src="https://img.icons8.com/?size=100&id=qGwgMt9xZDy5&format=png&color=000000" alt="Paper" width="17" height="17" style="vertical-align: middle;"/> <a href="https://arxiv.org/abs/2408.00778">Paper</a> • 
-   <img src="https://img.icons8.com/color/48/000000/internet.png" alt="Platform" width="15" height="15" style="vertical-align: middle;"/> <a href="https://carolzhangzz.github.io/frontendiffusion/">Website</a> • 
-   <img src="https://img.icons8.com/?size=100&id=114331&format=png&color=000000" alt="Video" width="18" height="18" style="vertical-align: middle; "/> <a href="https://twitter.com/jasonzding/status/1814046922874724767">Demo Video</a> •  
-  <img src="https://img.icons8.com/?size=100&id=13963&format=png&color=000000" alt="Twitter" width="18" height="18" style="vertical-align: middle;"/> <a href="https://twitter.com/Carol_Zhang1027">Twitter/X</a> 
-</p>
-
-![alt text](./Images/Interface.png)
-
-Frontend Diffusion is an end-to-end LLM-powered tool that generates high-quality websites from user sketches. Users can input a rough sketch on the canvas, which the system then transforms into a high-quality website page. You could use it to generate websites from sketch.
-
-The generated websites, as illustrated below, exhibit generally satisfactory visual appearances. These include contextually appropriate textual content, imagery, color schemes, layouts, and functionalities.
-
-<img src="./Images/newgif1.gif" width="400" /> <img src="./Images/newgif2.gif" width="400" />
-
-Screenshots of generated websites spanning commercial and academic domains:
-
-![alt text](./Images/Examples2.png)
-
-This tool is used by other open source projects such as <a href="https://github.com/lwaekfjlk/gpu-bartender">GPU Bartender</a>.
 
 # How to Use 
 1. Draw your sketch in the canvas panel using the toolbar on the left.
