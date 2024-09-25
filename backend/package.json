@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start-proxy": "lcp --proxyUrl http://127.0.0.1:8000 --proxyPartial /proxy",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -18,5 +19,8 @@
     "express": "^4.19.2",
     "node-fetch": "^3.3.2",
     "openai": "^4.47.1"
+  },
+  "devDependencies": {
+    "local-cors-proxy": "^1.1.0"
   }
 }

@@ -9,6 +9,68 @@ body {
   overflow: hidden; /* Prevent scrolling */
 }
 
+#file-upload-container {
+  position: absolute;
+  top: 60px;
+  left: 200px;
+  width: 250px;
+  padding: 15px;
+  background: linear-gradient(145deg, #ffffff, #f0f4ff);
+  box-shadow: 0 10px 20px rgba(60, 108, 228, 0.15), 
+              0 6px 6px rgba(60, 108, 228, 0.1),
+              inset 0 -2px 5px rgba(60, 108, 228, 0.06);
+  border-radius: 16px;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+#file-upload-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(60, 108, 228, 0.2), 
+              0 10px 10px rgba(60, 108, 228, 0.15);
+}
+
+#file-upload-container button {
+  background-color: #3c6ce4;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: "Poppins", Arial, sans-serif;
+  font-weight: 500;
+  margin-bottom: 10px;
+  margin-left: 60px;
+}
+
+#file-upload-container button:hover {
+  background-color: #2a5ad1;
+  transform: scale(1.05);
+}
+
+#file-upload-container .file-name {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #4a4a4a;
+  word-break: break-all;
+}
+
+#file-upload-container .upload-icon {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+#file-upload-container .upload-ready {
+  animation: pulse 2s infinite;
+}
 #container {
   position: relative;
   width: 100%;

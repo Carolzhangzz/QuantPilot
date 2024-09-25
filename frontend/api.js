@@ -26,6 +26,7 @@ export const output = document.getElementById("output");
 function hideProgressBar() {
   document.getElementById("progress-container").style.display = "none";
 }
+
 export function showMultiplePanel(index) {
   const panel = document.getElementById("multiple-panel");
   panel.style.display = "flex";

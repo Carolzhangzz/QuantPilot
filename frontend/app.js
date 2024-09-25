@@ -1,4 +1,11 @@
+// app.js
+// import * as originalApi from "./api.js";
+
+// import * as api from "./api.js";
 import * as api from "./api.js";
+import * as middleApi from "./middleapi.js";
+
+import { renderFileUpload } from './FileUpload.js';
 import {
   callAPIOnce,
   getStoredPRD,
@@ -176,8 +183,78 @@ const outputPre = document.getElementById("output");
 const outputContainer = document.getElementById("output-container");
 const outputArea = document.querySelector(".output-area");
 
+
+// 上传文件给后端的逻辑
+document.addEventListener('DOMContentLoaded', () => {
+  const fileUploadContainer = document.getElementById('file-upload-container');
+  renderFileUpload(fileUploadContainer, handleFileUploaded);
+});
+
+
+// 拿到 summary 和 goals 
+async function handleFileUploaded(file) {
+  try {
+    const result = await middleApi.generateSummary(file);
+    console.log("Summary:", result.summary);
+    console.log("Goals:", result.goals);
+    //拿到了之后, 一起传给 claude
+  } catch (error) {
+    console.error("Error generating summary:", error);
+  }
+}
+
+// 可以添加生成图像的函数，如果需要的话
+async function handleGenerateImage(file, instruction, userQuery) {
+  try {
+    const imageBlob = await middleApi.generateImage(file, instruction, userQuery);
+    console.log("Image generated successfully");
+    // 如果需要，您可以在这里处理 imageBlob
+    // 例如，创建一个 URL 并在控制台打印
+    const imageUrl = URL.createObjectURL(imageBlob);
+    console.log("Image URL:", imageUrl);
+  } catch (error) {
+    console.error("Error generating image:", error);
+  }
+}
+
+
+// // uploaded file handling  
+// document.addEventListener('DOMContentLoaded', () => {
+//   const fileUploadContainer = document.getElementById('file-upload-container');
+//   renderFileUpload(fileUploadContainer, handleFileUploaded);
+// });
+
+// async function handleFileUploaded(file) {
+//   const formData = new FormData();
+//   formData.append('file', file);
+
+//   try {
+//     const response = await fetch("http://localhost:8010/proxy/generate_summary", {
+//       method: "POST",
+//       body: formData,
+//       headers: {
+//         'Accept': 'application/json',
+//       },
+//     });
+    
+  
+//     if (response.ok) {
+//       const result = await response.json();
+//       console.log("Summary:", result.summary);
+//       console.log("Goals:", result.goals);
+//     } else {
+//       const errorDetails = await response.text(); // 获取详细的错误信息
+//       console.error("Error calling API:", response.status, response.statusText, errorDetails);
+//     }
+//   } catch (error) {
+//     console.error("Fetch error:", error);
+//   }  
+// }
+
+
 // toggle the tab content and toggle the narrow and wide width
 document.addEventListener("DOMContentLoaded", function () {
+
   function setNarrowWidth() {
     outputContainer.classList.add("narrow");
     outputContainer.classList.remove("wide");

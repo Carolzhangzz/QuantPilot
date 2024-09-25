@@ -1,0 +1,255 @@
+{
+    "goals": [
+      {
+        "index": 0,
+        "question": "What is the distribution of ages in the dataset?",
+        "rationale": "This visualization will provide insights into the age distribution of the individuals in the dataset, allowing the data analyst to understand the age demographics and potentially identify any age-related patterns or trends.",
+        "visualization": "histogram of age"
+      },
+      {
+        "index": 1,
+        "question": "How does the education level vary by gender?",
+        "rationale": "By visualizing the education levels of individuals grouped by gender, the data analyst can observe any disparities or trends in educational attainment between males and females in the dataset, providing valuable insights into potential gender-based differences in education.",
+        "visualization": "bar chart of education by gender"
+      }
+    ],
+    "summary": {
+      "dataset_description": "",
+      "field_names": [
+        "age",
+        "workclass",
+        "fnlwgt",
+        "education",
+        "educational_num",
+        "marital_status",
+        "occupation",
+        "relationship",
+        "race",
+        "gender",
+        "capital_gain",
+        "hours_per_week",
+        "native_country",
+        "income_50k_threshold",
+        "income_90k_threshold",
+        "income"
+      ],
+      "fields": [
+        {
+          "column": "age",
+          "properties": {
+            "description": "",
+            "dtype": "number",
+            "max": 85,
+            "min": 17,
+            "num_unique_values": 65,
+            "samples": [68, 71, 28],
+            "semantic_type": "",
+            "std": 15
+          }
+        },
+        {
+          "column": "workclass",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 8,
+            "samples": [
+              "?",
+              "Self-emp-not-inc",
+              "Private"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "fnlwgt",
+          "properties": {
+            "description": "",
+            "dtype": "number",
+            "max": 1330687,
+            "min": 25239,
+            "num_unique_values": 4287,
+            "samples": [453456, 250105, 61833],
+            "semantic_type": "",
+            "std": 187034
+          }
+        },
+        {
+          "column": "education",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 16,
+            "samples": [
+              "HS-grad",
+              "Some-college",
+              "Bachelors"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "educational_num",
+          "properties": {
+            "description": "",
+            "dtype": "number",
+            "max": 16,
+            "min": 1,
+            "num_unique_values": 16,
+            "samples": [9, 10, 13],
+            "semantic_type": "",
+            "std": 2
+          }
+        },
+        {
+          "column": "marital_status",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 7,
+            "samples": [
+              "Never-married",
+              "Widowed",
+              "Separated"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "occupation",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 11,
+            "samples": [
+              "Other-service",
+              "Production",
+              "Transport-moving"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "relationship",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 6,
+            "samples": [
+              "Unmarried",
+              "Not-in-family",
+              "Other-relative"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "race",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 5,
+            "samples": [
+              "Black",
+              "Amer-Indian-Eskimo",
+              "Asian-Pac-Islander"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "gender",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 2,
+            "samples": [
+              "Female",
+              "Male"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "capital_gain",
+          "properties": {
+            "description": "",
+            "dtype": "number",
+            "max": 300000,
+            "min": 0,
+            "num_unique_values": 84,
+            "samples": [1800, 0],
+            "semantic_type": "",
+            "std": 9776
+          }
+        },
+        {
+          "column": "hours_per_week",
+          "properties": {
+            "description": "",
+            "dtype": "number",
+            "max": 99,
+            "min": 1,
+            "num_unique_values": 73,
+            "samples": [52, 31],
+            "semantic_type": "",
+            "std": 11
+          }
+        },
+        {
+          "column": "native_country",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 100,
+            "samples": [
+              "U.S.-Virgin-Islands",
+              "France"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "income_50k_threshold",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 2,
+            "samples": [
+              "\u003C=50k",
+              "\u003E50k"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "income_90k_threshold",
+          "properties": {
+            "description": "",
+            "dtype": "category",
+            "num_unique_values": 2,
+            "samples": [
+              "\u003E90k",
+              "\u003C=90k"
+            ],
+            "semantic_type": ""
+          }
+        },
+        {
+          "column": "income",
+          "properties": {
+            "description": "",
+            "dtype": "number",
+            "max": 101250,
+            "min": 1250,
+            "num_unique_values": 41,
+            "samples": [81250, 38750],
+            "semantic_type": "",
+            "std": 31278
+          }
+        }
+      ],
+      "file_name": "2020_Census_data.csv",
+      "name": "2020_Census_data.csv"
+    }
+  }
