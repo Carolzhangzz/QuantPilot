@@ -133,6 +133,35 @@ def generate_image():
 
     return jsonify({'error': 'Invalid file type, only CSV files are allowed'}), 400
 
+@app.route('/run_python_code', methods=['POST'])
+def run_python_code():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    if file and file.filename.endswith('.csv'):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        python_code = request.form.get('code')
+        if not python_code:
+            return jsonify({'error': 'No Python code provided'}), 400
+
+        try:
+            data = pd.read_csv(filepath)
+            result = eval(python_code)
+
+            return jsonify({'result': str(result)}), 200
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    return jsonify({'error': 'Invalid file type, only CSV allowed'}), 400
+
 @app.route('/')
 def index():
     return '''
