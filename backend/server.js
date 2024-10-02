@@ -5,6 +5,8 @@ const bodyParser = require("body-parser");
 const prdRoutes = require("./routes/prdRoutes");
 const codeRoutes = require("./routes/codeRoutes");
 const ideaRoutes = require("./routes/ideaRoutes");
+const visualizationRoutes = require('./routes/dataRoutes');
+
 // Load environment variables from .env file
 dotenv.config();
 
@@ -17,6 +19,7 @@ app.use(bodyParser.json({ limit: '50mb' })); // Increase the limit to handle lar
 app.use("/api", prdRoutes);
 app.use("/api", codeRoutes);
 app.use("/api", ideaRoutes);
+app.use('/api', visualizationRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

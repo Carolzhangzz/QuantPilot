@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberInsight: Census Data Explorer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000814;
+            --text-color: #e0f2ff;
+            --accent-color: #00f7ff;
+            --accent-color-2: #ff00ff;
+            --accent-color-3: #39ff14;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(45deg, var(--accent-color), var(--accent-color-2));
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.5);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .chart-container {
+            background-color: rgba(0, 20, 40, 0.7);
+            border: 1px solid var(--accent-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.3);
+        }
+
+        .chart-title {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        #age-distribution, #education-gender, #income-heatmap, #work-occupation {
+            width: 100%;
+            height: 400px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .key-insights {
+            background-color: rgba(0, 20, 40, 0.7);
+            border: 1px solid var(--accent-color-2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .key-insights h2 {
+            color: var(--accent-color-2);
+            margin-top: 0;
+        }
+
+        .insight-card {
+            background-color: rgba(0, 40, 80, 0.5);
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .insight-card h3 {
+            margin-top: 0;
+            color: var(--accent-color-3);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CyberInsight: Census Data Explorer</h1>
+    </header>
+
+    <div class="container">
+        <div class="chart-container">
+            <div class="chart-title">Age Distribution</div>
+            <div id="age-distribution"></div>
+        </div>
+
+        <div class="grid">
+            <div class="chart-container">
+                <div class="chart-title">Education Level by Gender</div>
+                <div id="education-gender"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Income Distribution</div>
+                <div id="income-heatmap"></div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Work Class and Occupation</div>
+            <div id="work-occupation"></div>
+        </div>
+
+        <div class="key-insights">
+            <h2>Key Insights</h2>
+            <div id="insights-container"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        const ageData = {
+            x: Array.from({length: 69}, (_, i) => i + 17),
+            y: Array.from({length: 69}, () => Math.floor(Math.random() * 1000)),
+            type: 'bar',
+            marker: {
+                color: 'rgba(0, 247, 255, 0.8)',
+                line: {
+                    color: 'rgba(0, 247, 255, 1)',
+                    width: 1.5
+                }
+            }
+        };
+
+        const ageLayout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#e0f2ff' },
+            xaxis: { title: 'Age' },
+            yaxis: { title: 'Frequency' }
+        };
+
+        Plotly.newPlot('age-distribution', [ageData], ageLayout);
+
+        const educationLevels = ['Preschool', 'Elementary', 'Middle School', 'High School', 'Some College', 'Associate', 'Bachelor', 'Master', 'Doctorate'];
+        const maleData = {
+            x: educationLevels,
+            y: educationLevels.map(() => Math.floor(Math.random() * 1000)),
+            name: 'Male',
+            type: 'bar',
+            marker: { color: 'rgba(0, 247, 255, 0.8)' }
+        };
+
+        const femaleData = {
+            x: educationLevels,
+            y: educationLevels.map(() => Math.floor(Math.random() * 1000)),
+            name: 'Female',
+            type: 'bar',
+            marker: { color: 'rgba(255, 0, 255, 0.8)' }
+        };
+
+        const educationLayout = {
+            barmode: 'group',
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#e0f2ff' },
+            xaxis: { title: 'Education Level' },
+            yaxis: { title: 'Count' }
+        };
+
+        Plotly.newPlot('education-gender', [maleData, femaleData], educationLayout);
+
+        const incomeData = [{
+            z: Array.from({length: 10}, () => Array.from({length: 10}, () => Math.floor(Math.random() * 100000))),
+            type: 'heatmap',
+            colorscale: [
+                [0, 'rgb(0,0,80)'],
+                [0.5, 'rgb(0,120,180)'],
+                [1, 'rgb(0,247,255)']
+            ]
+        }];
+
+        const incomeLayout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#e0f2ff' },
+            xaxis: { title: 'Age Range' },
+            yaxis: { title: 'Education Level' }
+        };
+
+        Plotly.newPlot('income-heatmap', incomeData, incomeLayout);
+
+        const workClasses = ['Private', 'Self-emp-not-inc', 'Self-emp-inc', 'Federal-gov', 'Local-gov', 'State-gov', 'Without-pay', 'Never-worked'];
+        const occupations = ['Tech', 'Finance', 'Healthcare', 'Education', 'Service', 'Manufacturing'];
+
+        const sunburstData = [{
+            type: "sunburst",
+            labels: [...workClasses, ...occupations],
+            parents: [...new Array(workClasses.length).fill(""), ...workClasses.map(() => workClasses[Math.floor(Math.random() * workClasses.length)])],
+            values: [...new Array(workClasses.length + occupations.length).fill(0)].map(() => Math.floor(Math.random() * 1000)),
+            outsidetextfont: {size: 20, color: "#377eb8"},
+            leaf: {opacity: 0.4},
+            marker: {line: {width: 2}},
+        }];
+
+        const sunburstLayout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#e0f2ff' },
+            margin: {l: 0, r: 0, b: 0, t: 0},
+        };
+
+        Plotly.newPlot('work-occupation', sunburstData, sunburstLayout);
+
+        const insights = [
+            { title: "Median Age", value: "38 years" },
+            { title: "Most Common Education Level", value: "Bachelor's Degree" },
+            { title: "Median Income", value: "$52,000" },
+            { title: "Largest Work Class", value: "Private Sector" }
+        ];
+
+        const insightsContainer = document.getElementById('insights-container');
+        insights.forEach(insight => {
+            const card = document.createElement('div');
+            card.className = 'insight-card';
+            card.innerHTML = `<h3>${insight.title}</h3><p>${insight.value}</p>`;
+            insightsContainer.appendChild(card);
+        });
+    </script>
+</body>
+</html>

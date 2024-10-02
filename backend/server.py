@@ -133,34 +133,113 @@ def generate_image():
 
     return jsonify({'error': 'Invalid file type, only CSV files are allowed'}), 400
 
+# @app.route('/run_python_code', methods=['POST'])
+# def run_python_code():
+#     if 'file' not in request.files:
+#         return jsonify({'error': 'No file part'}), 400
+
+#     file = request.files['file']
+#     if file.filename == '':
+#         return jsonify({'error': 'No selected file'}), 400
+
+#     if file and file.filename.endswith('.csv'):
+#         filename = secure_filename(file.filename)
+#         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#         file.save(filepath)
+
+#         python_code = request.form.get('code')
+#         if not python_code:
+#             return jsonify({'error': 'No Python code provided'}), 400
+
+#         try:
+#             data = pd.read_csv(filepath)
+            
+#             # Create a new global namespace for executing the code
+#             global_namespace = {
+#                 'pd': pd,
+#                 'plt': plt,
+#                 'sns': sns,
+#                 'io': io,
+#                 'base64': base64,
+#                 'data': data
+#             }
+            
+#             # Execute the code and get the result
+#             result = eval(python_code, global_namespace)
+
+#             return jsonify({'result': str(result)}), 200
+
+#         except Exception as e:
+#             return jsonify({'error': str(e)}), 500
+
+#     return jsonify({'error': 'Invalid file type, only CSV allowed'}), 400
+
+# @app.route('/run_python_code', methods=['POST'])
+# def run_python_code():
+#     # 获取文件路径
+#     file_path = request.form.get('file')    
+#     print(f"Received file path: {file_path}")
+#     python_code = request.form.get('code')
+
+#     if not file_path or not os.path.exists(file_path):
+#         return jsonify({'error': 'File not found'}), 400
+
+#     try:
+#         # 读取文件内容
+#         data = pd.read_csv(file_path)
+
+#         # 执行传递的 Python 代码
+#         global_namespace = {
+#             'pd': pd,
+#             'data': data
+#         }
+#         print(f"Executing Python code on python side: {python_code}")
+#         print(f"Global namespace on python side: {global_namespace}")
+#         result = eval(python_code, global_namespace)
+
+#         return jsonify({'result': result}), 200
+#     except Exception as e:
+#         print(f"Error while executing Python code: {str(e)}")  # 输出详细错误日志
+#         return jsonify({'error': str(e)}), 500
+
+
 @app.route('/run_python_code', methods=['POST'])
 def run_python_code():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
+    # 获取文件路径
+    file_path = request.form.get('file')
+    python_code = request.form.get('code')
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+    if not file_path or not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 400
 
-    if file and file.filename.endswith('.csv'):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+    try:
+        # 读取文件内容
+        data = pd.read_csv(file_path)
 
-        python_code = request.form.get('code')
-        if not python_code:
-            return jsonify({'error': 'No Python code provided'}), 400
+        # 创建一个局部命名空间来存储结果
+        local_namespace = {}
 
-        try:
-            data = pd.read_csv(filepath)
-            result = eval(python_code)
+        # 执行传递的 Python 代码
+        exec(python_code, {'pd': pd, 'data': data}, local_namespace)
 
-            return jsonify({'result': str(result)}), 200
+        # 获取执行结果
+        result = local_namespace.get('result', None)
 
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
+        if result is None:
+            return jsonify({'error': 'No result returned from code execution'}), 500
 
-    return jsonify({'error': 'Invalid file type, only CSV allowed'}), 400
+        # 如果结果是 DataFrame，转换为字典
+        if isinstance(result, pd.DataFrame):
+            result = result.to_dict()
+        elif isinstance(result, pd.Series):
+            result = result.to_dict()
+        elif not isinstance(result, dict):
+            result = {'result': result}
+
+        return jsonify(result), 200
+    except Exception as e:
+        print(f"Error while executing Python code: {str(e)}")  # 输出详细错误日志
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/')
 def index():

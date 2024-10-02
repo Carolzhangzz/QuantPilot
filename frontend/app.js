@@ -5,10 +5,12 @@
 import * as api from "./api.js";
 import * as middleApi from "./middleapi.js";
 
-import { renderFileUpload } from './FileUpload.js';
+
+import { renderFileUpload } from "./FileUpload.js";
 import {
   callAPIOnce,
   getStoredPRD,
+  callGenerateVisualizationCode,
   generateIdeas,
   getStoredGeneratedCode,
   iterationCounter,
@@ -34,6 +36,42 @@ let redoStack = []; // Stack to store redo states
 const callApiButton = document.getElementById("call-api");
 const buttonText = callApiButton.querySelector("span");
 const buttonIcon = callApiButton.querySelector("img");
+
+// 上传文件给后端的逻辑
+document.addEventListener("DOMContentLoaded", () => {
+  const fileUploadContainer = document.getElementById("file-upload-container");
+  renderFileUpload(fileUploadContainer, handleFileUploaded);
+});
+
+// 拿到 summary 和 goals
+async function handleFileUploaded(file) {
+  try {
+    const result = await middleApi.generateSummary(file);
+    console.log("Summary:", result.summary);
+    console.log("Goals:", result.goals);
+    //拿到了之后, 一起传给 claude
+  } catch (error) {
+    console.error("Error generating summary:", error);
+  }
+}
+
+// 可以添加生成图像的函数，如果需要的话
+async function handleGenerateImage(file, instruction, userQuery) {
+  try {
+    const imageBlob = await middleApi.generateImage(
+      file,
+      instruction,
+      userQuery
+    );
+    console.log("Image generated successfully");
+    // 如果需要，您可以在这里处理 imageBlob
+    // 例如，创建一个 URL 并在控制台打印
+    const imageUrl = URL.createObjectURL(imageBlob);
+    console.log("Image URL:", imageUrl);
+  } catch (error) {
+    console.error("Error generating image:", error);
+  }
+}
 
 //show progress bar when the API is called
 function showProgressBar() {
@@ -74,65 +112,114 @@ document.getElementById("call-api").addEventListener("click", async () => {
 
   console.log("Call API button clicked");
 
-  // first call the API to generate PRD
+  // first call the API to generate PRD - 之前的版本 忽略
+  //   const svgContent = canvasToSvg();
+  //   let prompt = customPrompt || ""; //make sure prompt is not empty
+  //   try {
+  //     // first time call the API, wait for the PRD and then call the api to generate code based on the PRD
+  //     if (iterationCounter === 0) {
+  //       // multi panel show the lazy load overlay
+  //       showLazyLoadOverlay();
+  //       // call it once the callAPIOnce function starts
+  //       initializeIterationLoading(iterationCounter + 1);
+  //       // update the progress bar for the multi panel
+  //       updateIterationLoading(iterationCounter + 1, 50, false);
+  //       // the first time call the API
+  //       await api.callGeneratePRD(svgContent, prompt); // wait for the PRD to be generated
+  //       const currentStoredPRD = getStoredPRD(); // using the getter method
+  //       if (currentStoredPRD) {
+  //         await callAPIOnce(currentStoredPRD, prompt);
+  //       }
+  //     } else if (iterationCounter > 0 && iterationCounter <= 3) {
+  //       // show the lazy load overlay
+  //       showLazyLoadOverlay();
+  //       const currentStoredPRD = getStoredPRD(); // using the getter method
+  //       const previousCode = getStoredGeneratedCode();
+  //       if (!previousCode) {
+  //         alert("No code generated yet. Please generate code first.");
+  //         return;
+  //       }
+  //       if (!currentStoredPRD) {
+  //         alert("No PRD generated yet. Please generate a PRD first.");
+  //         return;
+  //       }
+  //       // call it once the callAPIOnce function starts
+  //       initializeIterationLoading(iterationCounter + 1);
+  //       updateIterationLoading(iterationCounter + 1, 50, false);
+  //       if (previousCode) {
+  //         // generate ideas based on the previous code
+  //         const ideas = await generateIdeas(previousCode);
+
+  //         if (!ideas) {
+  //           alert("No ideas generated. Please try again.");
+  //           console.error("No ideas generated. Please try again.");
+  //           return;
+  //         }
+  //         // turn the response ideas into text
+  //         const ideasText = ideas
+  //           .map((idea) => `${idea.title}:\n${idea.description}`)
+  //           .join("\n\n");
+
+  //         // add the new ideas to the prompt and call the API again
+  //         prompt = `${prompt}\n\nBased on the previous design, here are some new ideas to improve the website:\n${ideasText}\n\nPlease incorporate these ideas into the new design.`;
+  //         console.log("New Prompt with Ideas:", prompt);
+  //         await callAPIOnce(currentStoredPRD, prompt);
+  //       }
+  //     } else {
+  //       console.log("Maximum iterations reached:", iterationCounter);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error in API calls:", error);
+  //   }
+  // first call the API to generate PRD - 新的版本
   const svgContent = canvasToSvg();
-
-  let prompt = customPrompt || ""; //make sure prompt is not empty
+  let prompt = customPrompt || "";
+  // const summary = require('./data_summary.json');
+  // 使用 AJAX 加载 JSON 文件
+  let summary;
   try {
-    // first time call the API, wait for the PRD and then call the api to generate code based on the PRD
-    if (iterationCounter === 0) {
-      // multi panel show the lazy load overlay
-      showLazyLoadOverlay();
-      // call it once the callAPIOnce function starts
-      initializeIterationLoading(iterationCounter + 1);
-      // update the progress bar for the multi panel
-      updateIterationLoading(iterationCounter + 1, 50, false);
-      // the first time call the API
-      await api.callGeneratePRD(svgContent, prompt); // wait for the PRD to be generated
-      const currentStoredPRD = getStoredPRD(); // using the getter method
-      if (currentStoredPRD) {
-        await callAPIOnce(currentStoredPRD, prompt);
-      }
-    } else if (iterationCounter > 0 && iterationCounter <= 3) {
-      // show the lazy load overlay
-      showLazyLoadOverlay();
-      const currentStoredPRD = getStoredPRD(); // using the getter method
-      const previousCode = getStoredGeneratedCode();
-      if (!previousCode) {
-        alert("No code generated yet. Please generate code first.");
-        return;
-      }
-      if (!currentStoredPRD) {
-        alert("No PRD generated yet. Please generate a PRD first.");
-        return;
-      }
-      // call it once the callAPIOnce function starts
-      initializeIterationLoading(iterationCounter + 1);
-      updateIterationLoading(iterationCounter + 1, 50, false);
-      if (previousCode) {
-        // generate ideas based on the previous code
-        const ideas = await generateIdeas(previousCode);
-
-        if (!ideas) {
-          alert("No ideas generated. Please try again.");
-          console.error("No ideas generated. Please try again.");
-          return;
-        }
-        // turn the response ideas into text
-        const ideasText = ideas
-          .map((idea) => `${idea.title}:\n${idea.description}`)
-          .join("\n\n");
-
-        // add the new ideas to the prompt and call the API again
-        prompt = `${prompt}\n\nBased on the previous design, here are some new ideas to improve the website:\n${ideasText}\n\nPlease incorporate these ideas into the new design.`;
-        console.log("New Prompt with Ideas:", prompt);
-        await callAPIOnce(currentStoredPRD, prompt);
-      }
-    } else {
-      console.log("Maximum iterations reached:", iterationCounter);
-    }
+    const response = await fetch("./data_summary.json");
+    summary = await response.json();
   } catch (error) {
-    console.error("Error in API calls:", error);
+    console.error("Error loading data summary:", error);
+    alert("Failed to load data summary. Please try again.");
+    return;
+  }
+  try {
+
+    //打印一下输入的内容
+    console.log("Custom Prompt:", customPrompt);
+    console.log("Summary:", summary);
+    showLazyLoadOverlay();
+
+    initializeIterationLoading(1);
+    updateIterationLoading(1, 50, false);
+
+    const result = await callGenerateVisualizationCode(prompt, summary);
+    console.log("Visualization Code Result:", result);
+    // 处理成功的结果
+
+    // console.log("Calling api.callGeneratePRD with:", {svgContent, prompt, summary});
+    // const result = await api.callGeneratePRD(svgContent, prompt, summary);
+    // console.log("PRD Result:", result);
+
+    // const generatedPRD = result.prd;
+
+    // console.log("Generated PRD:", generatedPRD);
+
+    // if (generatedPRD) {
+    //   await callAPIOnce(generatedPRD, prompt);
+    // }
+
+    // updateIterationLoading(1, 100, true);
+    hideLazyLoadOverlay();
+  } catch (error) {
+    // 处理错误
+    hideLazyLoadOverlay();
+    console.error("Error generating visualization code:", error);
+    alert(
+      "An error occurred while generating visualization code. Please try again."
+    );
   }
 });
 
@@ -183,78 +270,8 @@ const outputPre = document.getElementById("output");
 const outputContainer = document.getElementById("output-container");
 const outputArea = document.querySelector(".output-area");
 
-
-// 上传文件给后端的逻辑
-document.addEventListener('DOMContentLoaded', () => {
-  const fileUploadContainer = document.getElementById('file-upload-container');
-  renderFileUpload(fileUploadContainer, handleFileUploaded);
-});
-
-
-// 拿到 summary 和 goals 
-async function handleFileUploaded(file) {
-  try {
-    const result = await middleApi.generateSummary(file);
-    console.log("Summary:", result.summary);
-    console.log("Goals:", result.goals);
-    //拿到了之后, 一起传给 claude
-  } catch (error) {
-    console.error("Error generating summary:", error);
-  }
-}
-
-// 可以添加生成图像的函数，如果需要的话
-async function handleGenerateImage(file, instruction, userQuery) {
-  try {
-    const imageBlob = await middleApi.generateImage(file, instruction, userQuery);
-    console.log("Image generated successfully");
-    // 如果需要，您可以在这里处理 imageBlob
-    // 例如，创建一个 URL 并在控制台打印
-    const imageUrl = URL.createObjectURL(imageBlob);
-    console.log("Image URL:", imageUrl);
-  } catch (error) {
-    console.error("Error generating image:", error);
-  }
-}
-
-
-// // uploaded file handling  
-// document.addEventListener('DOMContentLoaded', () => {
-//   const fileUploadContainer = document.getElementById('file-upload-container');
-//   renderFileUpload(fileUploadContainer, handleFileUploaded);
-// });
-
-// async function handleFileUploaded(file) {
-//   const formData = new FormData();
-//   formData.append('file', file);
-
-//   try {
-//     const response = await fetch("http://localhost:8010/proxy/generate_summary", {
-//       method: "POST",
-//       body: formData,
-//       headers: {
-//         'Accept': 'application/json',
-//       },
-//     });
-    
-  
-//     if (response.ok) {
-//       const result = await response.json();
-//       console.log("Summary:", result.summary);
-//       console.log("Goals:", result.goals);
-//     } else {
-//       const errorDetails = await response.text(); // 获取详细的错误信息
-//       console.error("Error calling API:", response.status, response.statusText, errorDetails);
-//     }
-//   } catch (error) {
-//     console.error("Fetch error:", error);
-//   }  
-// }
-
-
 // toggle the tab content and toggle the narrow and wide width
 document.addEventListener("DOMContentLoaded", function () {
-
   function setNarrowWidth() {
     outputContainer.classList.add("narrow");
     outputContainer.classList.remove("wide");
@@ -276,7 +293,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setWideWidth();
   });
 
-  // set the initial width based on the active tab 
+  // set the initial width based on the active tab
   if (leftTab.classList.contains("active")) {
     setNarrowWidth();
   } else {
@@ -484,10 +501,10 @@ function startDrawing(event) {
   startY = y;
   ctx.beginPath();
 
-  // clear the redo stack 
+  // clear the redo stack
   redoStack = [];
 
-  // use the imageData to store the current state of the canvas 
+  // use the imageData to store the current state of the canvas
   ctx.putImageData(imageData, 0, 0);
 }
 
