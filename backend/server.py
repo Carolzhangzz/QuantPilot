@@ -10,6 +10,8 @@ import matplotlib
 import pandas as pd
 from dotenv import load_dotenv
 from flask_cors import CORS
+import traceback
+import csv
 
 # 加载 .env 文件
 load_dotenv()
@@ -23,8 +25,8 @@ if not openai_api_key:
 os.environ['OPENAI_API_KEY'] = openai_api_key
 
 
+# CORS Setup
 app = Flask(__name__)
-
 CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:8080"}})
 
 @app.after_request
@@ -42,6 +44,8 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 lida = Manager(text_gen=llm("openai"))
+
+
 
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = 'http://127.0.0.1:8080'
@@ -203,43 +207,173 @@ def generate_image():
 #         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/read_csv_header', methods=['POST'])
+def read_csv_header():
+    data = request.json
+    file_path = data.get('file_path')
+    
+    if not file_path:
+        return jsonify({'error': 'No file path provided'}), 400
+    
+    try:
+        df = pd.read_csv(file_path, nrows=0)
+        header = df.columns.tolist()
+        return jsonify({'header': header})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/run_python_code', methods=['POST'])
 def run_python_code():
-    # 获取文件路径
     file_path = request.form.get('file')
     python_code = request.form.get('code')
 
     if not file_path or not os.path.exists(file_path):
-        return jsonify({'error': 'File not found'}), 400
+        return jsonify({'error': f'File not found: {file_path}'}), 400
 
     try:
-        # 读取文件内容
+        # Read file content
         data = pd.read_csv(file_path)
 
-        # 创建一个局部命名空间来存储结果
-        local_namespace = {}
+        # Get list of available columns
+        available_columns = data.columns.tolist()
 
-        # 执行传递的 Python 代码
-        exec(python_code, {'pd': pd, 'data': data}, local_namespace)
+        # Attempt to auto-correct common issues
+        python_code, warnings = auto_correct_code(python_code, available_columns)
 
-        # 获取执行结果
-        result = local_namespace.get('result', None)
+        # Modify the Python code to ensure it returns a result
+        modified_code = f"""
+def execute_code():
+    {python_code}
+    return locals()
 
-        if result is None:
+result = execute_code()
+"""
+
+        # Create a local namespace to store results
+        local_namespace = {'pd': pd, 'data': data}
+
+        # Execute the modified Python code
+        exec(modified_code, local_namespace)
+
+        # Get the execution result
+        result = local_namespace.get('result', {})
+
+        if not result:
             return jsonify({'error': 'No result returned from code execution'}), 500
 
-        # 如果结果是 DataFrame，转换为字典
-        if isinstance(result, pd.DataFrame):
-            result = result.to_dict()
-        elif isinstance(result, pd.Series):
-            result = result.to_dict()
-        elif not isinstance(result, dict):
-            result = {'result': result}
+        # Convert result to JSON-serializable format
+        serializable_result = make_serializable(result)
 
-        return jsonify(result), 200
+        response = {
+            'result': serializable_result,
+            'warnings': warnings,
+            'available_columns': available_columns
+        }
+
+        return jsonify(response), 200
+
     except Exception as e:
-        print(f"Error while executing Python code: {str(e)}")  # 输出详细错误日志
-        return jsonify({'error': str(e)}), 500
+        error_traceback = traceback.format_exc()
+        print(f"Error while executing Python code: {str(e)}\n{error_traceback}")
+        return jsonify({
+            'error': str(e), 
+            'traceback': error_traceback,
+            'available_columns': available_columns
+        }), 500
+
+def make_serializable(obj):
+    if isinstance(obj, (pd.DataFrame, pd.Series)):
+        return obj.to_dict()
+    elif isinstance(obj, (int, float, str, bool, type(None))):
+        return obj
+    elif isinstance(obj, (list, tuple)):
+        return [make_serializable(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {str(k): make_serializable(v) for k, v in obj.items()}
+    else:
+        return str(obj)
+
+# @app.route('/run_python_code', methods=['POST'])
+# def run_python_code():
+#     file_path = request.form.get('file')
+#     python_code = request.form.get('code')
+
+#     if not file_path or not os.path.exists(file_path):
+#         return jsonify({'error': f'File not found: {file_path}'}), 400
+
+#     try:
+#         # Read file content
+#         data = pd.read_csv(file_path)
+
+#         # Get list of available columns
+#         available_columns = data.columns.tolist()
+
+#         # Attempt to auto-correct common issues
+#         python_code, warnings = auto_correct_code(python_code, available_columns)
+
+#         # Create a local namespace to store results
+#         local_namespace = {}
+
+#         # Execute the Python code
+#         exec(python_code, {'pd': pd, 'data': data}, local_namespace)
+
+#         # Get the execution result
+#         result = local_namespace.get('result', None)
+
+#         if result is None:
+#             return jsonify({'error': 'No result returned from code execution'}), 500
+
+#         # Convert result to JSON-serializable format
+#         if isinstance(result, pd.DataFrame):
+#             result = result.to_dict()
+#         elif isinstance(result, pd.Series):
+#             result = result.to_dict()
+#         elif not isinstance(result, dict):
+#             result = {'result': result}
+
+#         response = {
+#             'result': result,
+#             'warnings': warnings,
+#             'available_columns': available_columns
+#         }
+
+#         return jsonify(response), 200
+
+#     except Exception as e:
+#         error_traceback = traceback.format_exc()
+#         print(f"Error while executing Python code: {str(e)}\n{error_traceback}")
+#         return jsonify({
+#             'error': str(e), 
+#             'traceback': error_traceback,
+#             'available_columns': available_columns
+#         }), 500
+
+def auto_correct_code(code, available_columns):
+    warnings = []
+    new_code_lines = []
+
+    for line in code.split('\n'):
+        if "data['" in line:
+            column = line.split("data['")[1].split("']")[0]
+            if column not in available_columns:
+                close_match = find_close_match(column, available_columns)
+                if close_match:
+                    line = line.replace(f"data['{column}']", f"data['{close_match}']")
+                    warnings.append(f"Column '{column}' not found. Using '{close_match}' instead.")
+                else:
+                    warnings.append(f"Column '{column}' not found and no close match available. This may cause an error.")
+        new_code_lines.append(line)
+
+    return '\n'.join(new_code_lines), warnings
+
+def find_close_match(column, available_columns):
+    # This is a basic implementation. You might want to use more sophisticated methods like fuzzy matching.
+    for available_column in available_columns:
+        if column.lower() in available_column.lower() or available_column.lower() in column.lower():
+            return available_column
+    return None
+
 
 @app.route('/')
 def index():

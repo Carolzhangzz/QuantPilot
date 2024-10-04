@@ -16,20 +16,21 @@ const generatePRD = async (req, res) => {
     });
 
     const prompt = `
-      Please generate a Product Requirements Document (PRD) for a data report website based on the following inputs:
+      Please generate a comprehensive Product Requirements Document (PRD) for a data report website based on the following inputs:
       1. User's sketch (the image I sent you)
       2. User's prompt: ${userPrompt}
       3. Data summary: ${JSON.stringify(summary)}
 
       The PRD should include:
-      1. An overview of the website's purpose and main features
-      2. A detailed description of the data visualization components needed (e.g., charts, graphs, tables)
-      3. Layout and design recommendations based on the user's sketch
-      4. Suggestions for presenting the key insights from the data summary
-      5. Any additional features or interactivity that would enhance the user experience
+      1. **Overview**: The website's purpose, key objectives, and main features, focusing on both data visualizations and essential web elements (e.g., navigation, header, footer).
+      2. **Data Visualization Components**: Detailed descriptions of the data visualizations needed, including chart types (e.g., bar charts, line graphs, tables), and how these visualizations should be integrated with user interactions such as filtering, sorting, and tooltips.
+      3. **Basic Website Elements**: Ensure the website includes essential elements such as a navigation bar, header, footer, and a responsive layout. Detail how each of these elements should contribute to a cohesive user experience.
+      4. **Layout and Design Recommendations**: Provide layout suggestions based on the user’s sketch, ensuring proper placement of data visualizations and basic elements like navigation, page structure, and calls to action.
+      5. **Insights Presentation**: Propose clear ways to present the key insights from the data summary, ensuring that insights are easy to understand and align with the visualizations.
+      6. **Additional Features and Interactivity**: Suggest any additional features that would enhance the user experience, such as search functionality, user preferences (e.g., dark mode), or downloadable reports.
 
-      Please structure your response in a clear, organized manner suitable for developers to implement a modern, user-friendly front-end interface for data reporting.
-    `;
+      The document should be structured clearly, making it suitable for developers to implement a modern, user-friendly front-end interface for data reporting.
+      `;
 
     const message = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20240620",
@@ -95,7 +96,7 @@ module.exports = { generatePRD };
 //     });
 
 //     const prompt = `
-//       Please generate a Product Requirements Document (PRD) which 
+//       Please generate a Product Requirements Document (PRD) which
 //       targets creating a modern and user-friendly front-end interface based on the following user's sketch (the picture I sent you) and prompt.
 //       User's prompt: ${userPrompt}
 //       In the PRD, specify what images are needed and where they should be placed (e.g., hero image, product image, etc.) using the format:
@@ -145,13 +146,13 @@ module.exports = { generatePRD };
 //     );
 
 //     setStoredImageUrls(imageUrls);
-    
+
 //     const hasErrors = imageUrls.some(img => img.error !== null);
 
-//     res.json({ 
-//       prd, 
-//       keywords, 
-//       imageUrls, 
+//     res.json({
+//       prd,
+//       keywords,
+//       imageUrls,
 //       storedImageUrl: imageUrl,
 //       hasErrors: hasErrors
 //     });

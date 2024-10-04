@@ -12,13 +12,12 @@ body {
 #file-upload-container {
   position: absolute;
   top: 60px;
-  left: 200px;
+  left: 110px;
   width: 250px;
   padding: 15px;
   background: linear-gradient(145deg, #ffffff, #f0f4ff);
-  box-shadow: 0 10px 20px rgba(60, 108, 228, 0.15), 
-              0 6px 6px rgba(60, 108, 228, 0.1),
-              inset 0 -2px 5px rgba(60, 108, 228, 0.06);
+  box-shadow: 0 10px 20px rgba(60, 108, 228, 0.15),
+    0 6px 6px rgba(60, 108, 228, 0.1), inset 0 -2px 5px rgba(60, 108, 228, 0.06);
   border-radius: 16px;
   z-index: 10;
   transition: all 0.3s ease;
@@ -26,8 +25,8 @@ body {
 
 #file-upload-container:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(60, 108, 228, 0.2), 
-              0 10px 10px rgba(60, 108, 228, 0.15);
+  box-shadow: 0 15px 30px rgba(60, 108, 228, 0.2),
+    0 10px 10px rgba(60, 108, 228, 0.15);
 }
 
 #file-upload-container button {
@@ -63,9 +62,15 @@ body {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 #file-upload-container .upload-ready {
@@ -414,7 +419,8 @@ textarea {
 }
 
 #copy-code,
-#toggle-size {
+#toggle-size,
+#open-new-window {
   position: fixed;
   z-index: 21;
   padding: 10px;
@@ -431,18 +437,26 @@ textarea {
   background: none;
 }
 
+#open-new-window {
+  top: 50px;
+  right: 470px;
+  background: none;
+}
+
 #toggle-size {
   top: 160px;
   right: 100px;
 }
 
 #copy-code:hover,
-#toggle-size:hover {
+#toggle-size:hover,
+#open-new-window:hover {
   transform: scale(1.1);
 }
 
 #copy-code img,
-#toggle-size img {
+#toggle-size img,
+#open-new-window img {
   width: 20px;
   height: 20px;
   fill: rgb(224, 224, 224);
@@ -670,22 +684,31 @@ textarea {
   margin: 20px;
   margin-left: 80px;
 }
-
+/* 在应用的小窗口中的 iframe */
 .preview-view #output,
 #iframe-container iframe {
-  display: flex;
-  position: absolute;
-  margin-left: 30px;
-  margin-top: -33px;
-  max-height: 700px;
-  max-width: 1300px;
-  width: 1100px;
-  height: 650px;
-  border: 1px solid #ccc;
-  background: white;
-  border-radius: 10px;
-  overflow: auto;
-  padding: 10px;
+    display: flex;
+    position: absolute;
+    margin-left: 30px;
+    margin-top: -33px;
+    max-height: 700px;
+    max-width: 1300px;
+    width: 1100px;
+    height: 650px;
+    border: 1px solid #ccc;
+    background: white;
+    border-radius: 10px;
+    overflow: auto;
+    padding: 10px;
+    transform-origin: top left;
+}
+
+/* 在新窗口中的 iframe */
+.new-window-iframe {
+  width: 100%;
+  height: 100vh;
+  border: none;
+  transform: none;  /* 不进行缩放 */
 }
 
 .toggle-container {
@@ -860,7 +883,7 @@ textarea {
   width: 1024px;
   height: 768px;
   border: none;
-  transform: scale(0.2);
+  transform: scale(0.5);
   transform-origin: top left;
   position: absolute;
   top: 0;
@@ -947,8 +970,6 @@ textarea {
 #progress-container span:last-child {
   float: right;
 }
-
-
 
 /* some animations */
 @keyframes grow {
@@ -1063,4 +1084,3 @@ textarea {
   z-index: 9999;
   pointer-events: none;
 }
-

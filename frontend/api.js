@@ -3,11 +3,13 @@ export let iterationCounter = 0;
 let storedGeneratedCode = "";
 let iterationCodes = ["", "", "", ""]; // store the code for each iteration
 let _storedPRD = null;
-import { generateSummary, generateImage, runPythonCode } from './middleapi.js';
-
+import { generateSummary, generateImage, runPythonCode } from "./middleapi.js";
+import { canvasToSvg } from "./app.js";
+// 在全局范围内声明一个变量来存储生成的代码
+let generatedCode = "";
 // 假设你有一个全局变量来存储生成的 Python 代码
 let storedPythonCode = {};
-
+import * as api from "./api.js";
 // 存储生成的 Python 代码
 function setStoredPythonCode(pythonCode) {
   storedPythonCode = pythonCode;
@@ -17,7 +19,6 @@ function setStoredPythonCode(pythonCode) {
 function getStoredPythonCode() {
   return storedPythonCode;
 }
-
 
 export function setStoredGeneratedCode(code) {
   storedGeneratedCode = code;
@@ -34,6 +35,7 @@ export function getStoredPRD() {
 export function setStoredPRD(prd) {
   _storedPRD = prd;
 }
+
 export const output = document.getElementById("output");
 
 //hide progress bar
@@ -79,164 +81,81 @@ const buttonText = callApiButton.querySelector("span");
 const buttonIcon = callApiButton.querySelector("img");
 const outputIframe = document.getElementById("output-iframe");
 
-export async function callGenerateVisualizationCode(userPrompt, summary) {
-  updateProgress("Loading...", 0);
-  callApiButton.style.width = "11rem";
-  callApiButton.style.backgroundColor = "white";
-  buttonIcon.src = "/ICONS/load.gif";
-  buttonText.textContent = "Generating Code...";
-  buttonText.style.color = "black";
+function parsePythonCode(pythonCodeString) {
+  try {
+    // 移除 Markdown 代码块标记
+    let cleanedString = pythonCodeString.replace(/^```json\n|\n```$/g, "");
 
+    // 解析 JSON
+    const pythonCodeObject = JSON.parse(cleanedString);
+
+    // 返回解析后的对象
+    return pythonCodeObject;
+  } catch (error) {
+    console.error("Error parsing Python code:", error);
+    console.error("Python code string:", pythonCodeString);
+    return null;
+  }
+}
+
+export async function callGenerateVisualizationCode(
+  summary,
+  prompt,
+  csvHeader
+) {
   try {
     console.log("Attempting to call generate-visualization-code API...");
-    const response = await fetch("http://localhost:3000/api/generate-visualization-code", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userPrompt: userPrompt,
-        summary: summary,
-      }),
-    });
+
+    const response = await fetch(
+      "http://localhost:3000/api/generate-visualization-code",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ summary, userPrompt: prompt, csvHeader }),
+      }
+    );
 
     console.log("Response received:", response);
 
     if (response.ok) {
-      animateProgress(0, 12.5, 2000, "Loading..."); // 2 seconds animation
       const result = await response.json();
-      console.log("Full result:", result);
-      console.log("Generated Python Code:", result.pythonCode);
-      // 存储生成的 Python 代码 
+      // 存储生成的 Python 代码
       setStoredPythonCode(result.pythonCode);
-      // 打印存储的 Python 代码
-      console.log("Stored Python Code:", storedPythonCode);
-      // // 使用本地 uploads 文件夹中的 CSV 文件进行测试
-      // executePythonCodeForLocalFile("../uploads/2020_Census_data.csv");
-      
-      // //// 传递用户上传的 CSV 文件，然后执行每个类别的 Python 代码
-      // const userUploadedFile = document.getElementById('file-input').files[0];
-      // executePythonCodeForEachCategory(userUploadedFile);
-      // const filePath = `uploads/${fileName}`;
-      // 假设你有一个函数来设置和显示生成的代码
-      // setStoredPythonCode(result.pythonCode);
-      // displayPythonCode(result.pythonCode);
 
-      return result; // 返回解析后的结果
+      // 获取存储的 Python 代码
+      const storedPythonCodeString = storedPythonCode;
+      console.log("Stored Python Code (raw):", storedPythonCodeString);
+
+      // 解析并转换 Python 代码
+      const parsedPythonCode = parsePythonCode(storedPythonCodeString);
+      console.log("Parsed Python Code:", parsedPythonCode);
+
+      if (parsedPythonCode) {
+        return parsedPythonCode;
+      } else {
+        throw new Error("Failed to parse Python code");
+      }
     } else {
-      console.error("API call failed, status:", response.status);
-      const errorText = await response.text();
-      console.error("Error details:", errorText);
-      throw new Error(`API call failed: ${response.status} ${errorText}`);
+      console.error("API call failed with status:", response.status);
+      throw new Error(`API call failed with status: ${response.status}`);
     }
   } catch (error) {
     console.error("Error in fetch operation:", error);
     console.error("Error stack:", error.stack);
     throw error; // 重新抛出错误，让调用者处理
-  } finally {
-    callApiButton.style.width = "8rem";
-    callApiButton.style.backgroundColor = "#3c6ce4";
-    buttonIcon.src = "/ICONS/call-api.svg";
-    buttonText.textContent = "Generate";
-    buttonText.style.color = "white";
   }
 }
 
-const returnfromClaude = {
-  "age_distribution": "result = {'age_data': data['age'].value_counts().to_dict()}",
-  "education_gender_comparison": "result = {'education_by_gender': data.groupby(['education', 'gender']).size().unstack(fill_value=0).to_dict()}"
-};
 
-document.getElementById("test-python-api").addEventListener("click", async function() {
-  const filePath = 'uploads/2020_Census_data.csv';  // 假设文件已存在服务器上
-
-  // 遍历 returnfromClaude 中的每个 Python 代码片段
-  for (const [category, pythonCode] of Object.entries(returnfromClaude)) {
-    try {
-      console.log(`Executing Python code for category: ${category}`);
-      console.log(`File path: ${filePath}`);
-      console.log(`Python code: ${pythonCode}`);
-      
-      // 调用 runPythonCode 函数，并传递文件路径和 Python 代码
-      const result = await runPythonCode(filePath, pythonCode);
-      console.log(`Result for ${category}:`, result);
-    } catch (error) {
-      console.error(`Error executing Python code for ${category}:`, error);
-    }
-  }
-});
-
-
-// export async function callGeneratePRD(svgContent, userPrompt) {
-
-//   updateProgress("Loading...", 0);
-//   callApiButton.style.width = "11rem";
-//   callApiButton.style.backgroundColor = "white";
-//   buttonIcon.src = "/ICONS/load.gif";
-//   buttonText.textContent = "Generating Prd...";
-//   buttonText.style.color = "black";
-
-//   try {
-//     console.log("Attempting to call generate-prd API...");
-//     const response = await fetch("http://localhost:3000/api/generate-prd", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         svg: svgContent,
-//         userPrompt: userPrompt,
-//       }),
-//     });
-
-//     console.log("Response received:", response);
-
-//     if (response.ok) {
-//       animateProgress(0, 12.5, 2000, "Loading..."); // 2 seconds animation
-//       const result = await response.json();
-//       setStoredPRD(result.prd);
-//       output.textContent = result.prd;
-
-//       // deal with the imageUrls but not alert the error
-//       if (result.imageUrls) {
-//         result.imageUrls.forEach(img => {
-//           if (img.error) {
-//             console.warn(`Failed to fetch image for ${img.term}: ${img.error}`);
-//             // can set a default image URL here
-//           } else {
-//             console.log(`Image URL for ${img.term}: ${img.imageUrl}`);
-//             // can use the image URL here
-//           }
-//         });
-//       }
-//     } else {
-//       console.error("API call failed, status:", response.status);
-//       const errorText = await response.text();
-//       console.error("Error details:", errorText);
-//     }
-//   } catch (error) {
-//     console.error("Error in fetch operation:", error);
-//     console.error("Error stack:", error.stack);
-//   } finally {
-//     callApiButton.style.width = "8rem";
-//     callApiButton.style.backgroundColor = "#3c6ce4";
-//     buttonIcon.src = "/ICONS/call-api.svg";
-//     buttonText.textContent = "Generate";
-//     buttonText.style.color = "white";
-//   }
-// }
-
-// call the API to generate ideas
-
-//新版
 export async function callGeneratePRD(svgContent, userPrompt, summary) {
-  updateProgress("Loading...", 0);
-  callApiButton.style.width = "11rem";
-  callApiButton.style.backgroundColor = "white";
-  buttonIcon.src = "/ICONS/load.gif";
-  buttonText.textContent = "Generating Prd...";
-  buttonText.style.color = "black";
-
+  // updateProgress("Loading...", 0);
+  // callApiButton.style.width = "11rem";
+  // callApiButton.style.backgroundColor = "white";
+  // buttonIcon.src = "/ICONS/load.gif";
+  // buttonText.textContent = "Generating Prd...";
+  // buttonText.style.color = "black";
   try {
     console.log("Attempting to call generate-prd API...");
     const response = await fetch("http://localhost:3000/api/generate-prd", {
@@ -250,28 +169,12 @@ export async function callGeneratePRD(svgContent, userPrompt, summary) {
         summary: summary, // 添加 summary 到请求体
       }),
     });
-
-    console.log("Response received:", response);
-
+    // console.log("Response received:", response);
     if (response.ok) {
-      animateProgress(0, 12.5, 2000, "Loading..."); // 2 seconds animation
+      // animateProgress(0, 12.5, 2000, "Loading..."); // 2 seconds animation
       const result = await response.json();
       setStoredPRD(result.prd);
       output.textContent = result.prd;
-
-      // deal with the imageUrls but not alert the error
-      if (result.imageUrls) {
-        result.imageUrls.forEach((img) => {
-          if (img.error) {
-            console.warn(`Failed to fetch image for ${img.term}: ${img.error}`);
-            // can set a default image URL here
-          } else {
-            console.log(`Image URL for ${img.term}: ${img.imageUrl}`);
-            // can use the image URL here
-          }
-        });
-      }
-
       return result; // 返回解析后的结果
     } else {
       console.error("API call failed, status:", response.status);
@@ -283,13 +186,14 @@ export async function callGeneratePRD(svgContent, userPrompt, summary) {
     console.error("Error in fetch operation:", error);
     console.error("Error stack:", error.stack);
     throw error; // 重新抛出错误，让调用者处理
-  } finally {
-    callApiButton.style.width = "8rem";
-    callApiButton.style.backgroundColor = "#3c6ce4";
-    buttonIcon.src = "/ICONS/call-api.svg";
-    buttonText.textContent = "Generate";
-    buttonText.style.color = "white";
   }
+  //finally {
+  //   callApiButton.style.width = "8rem";
+  //   callApiButton.style.backgroundColor = "#3c6ce4";
+  //   buttonIcon.src = "/ICONS/call-api.svg";
+  //   buttonText.textContent = "Generate";
+  //   buttonText.style.color = "white";
+  // }
 }
 
 export async function generateIdeas(previousCode) {
@@ -351,22 +255,195 @@ export async function generateIdeas(previousCode) {
   }
 }
 
+export async function DataToWeb(
+  _storedPRD,
+  userPrompt = null,
+  allResults = null
+) {
+  console.log("calldataToWeb called with storedPRD, userPrompt, and allResults:");
+  console.log("storedPRD:", _storedPRD);
+  console.log("userPrompt:", userPrompt);
+  console.log("allResults:", allResults); // 打印 allResults
 
-function extractChartData(code) {
-  // 这个函数需要根据生成的代码结构来实现
-  // 它应该解析代码并返回一个包含所有图表数据的对象
-  // 例如：
-  return {
-    ageDistribution: {
-      data: [/* 年龄分布数据 */],
-      layout: {/* 年龄分布布局 */}
-    },
-    educationGender: {
-      data: [/* 教育程度和性别数据 */],
-      layout: {/* 教育程度和性别布局 */}
-    },
-    // ... 其他图表数据
-  };
+  // 禁用按钮，防止多次点击
+  callApiButton.disabled = true;
+
+  // Show the lazy load overlay
+  const lazyLoadOverlay = document.querySelector(".lazy-load-overlay");
+  if (lazyLoadOverlay) {
+    lazyLoadOverlay.style.display = "flex";
+  }
+
+  try {
+    const requestBody = {
+      iteration: iterationCounter,
+      userPrompt: userPrompt,
+      storedPRD: _storedPRD,
+      allResults: allResults, // 确保 allResults 被正确传递
+    };
+
+    console.log("Request Body:", JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch("http://localhost:3000/api/generate-code", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log("Response Status:", response.status);
+    const responseText = await response.text();
+    console.log("Response Body:", responseText);
+
+    if (!response.ok) {
+      throw new Error(
+        `API call failed: ${response.status} ${response.statusText}\n${responseText}`
+      );
+    }
+
+    const result = JSON.parse(responseText);
+    let cleanCode = result.generatedCode;
+
+    // Remove any non-HTML content before the <!DOCTYPE html>
+    cleanCode = cleanCode.replace(/^[\s\S]*?(<!DOCTYPE html>)/, "$1");
+
+    // Remove any non-HTML content after </html>
+    cleanCode = cleanCode.replace(/(<\/html>)[\s\S]*$/, "$1");
+
+    // Replace all local development server references with relative paths
+    cleanCode = cleanCode.replace(/http:\/\/127\.0\.0\.1:8080\//g, "./");
+    cleanCode = cleanCode.replace(/http:\/\/localhost:8080\//g, "./");
+
+    // Check if the code is generated successfully
+    if (cleanCode.trim()) {
+      updateIterationLoading(1, 100, true);
+      setStoredGeneratedCode(cleanCode);
+
+      // Hide the lazy load overlay
+      if (lazyLoadOverlay) {
+        lazyLoadOverlay.style.display = "none";
+      }
+
+      // Prevent the default behavior of the iframe
+      preventIframeDefaultBehavior(outputIframe);
+
+      // 保存生成的代码
+      generatedCode = cleanCode;
+
+      // Update the output section
+      output.textContent = cleanCode;
+
+      // Update the iframe to show the generated code
+      outputIframe.srcdoc = cleanCode;
+
+      // Update stored codes
+      iterationCodes[iterationCounter % 4] = cleanCode;
+
+      // Update iteration frame
+      const iterationFrameIndex = (iterationCounter % 4) + 1;
+      const iterationFrame = document.getElementById(
+        `output-iframe-${iterationFrameIndex}`
+      );
+
+      if (iterationFrame) {
+        iterationFrame.srcdoc = cleanCode;
+      }
+
+      console.log(`This is the ${iterationCounter} time to call the API`);
+      // Update the Counter
+      iterationCounter++;
+      console.log("Iteration Counter:", iterationCounter);
+
+      // Switch to the specific panel
+      simulateClickOnPanel(iterationCounter);
+    } else {
+      throw new Error("Generated code is empty");
+    }
+  } catch (error) {
+    console.error("Error in callAPIOnce:", error);
+    // Hide the lazy load overlay
+    if (lazyLoadOverlay) {
+      lazyLoadOverlay.style.display = "none";
+    }
+    // Show error message to user
+    alert(`Failed to generate code: ${error.message}`);
+  } finally {
+    // 启用按钮，防止长时间禁用
+    setTimeout(() => {
+      callApiButton.disabled = false;
+      callApiButton.style.width = "8rem";
+      callApiButton.style.backgroundColor = "#3c6ce4";
+      buttonIcon.src = "/ICONS/call-api.svg";
+      buttonText.textContent = "Generate";
+      buttonText.style.color = "white";
+    }, 3000);
+  }
+}
+
+
+// 添加新的事件监听器来处理新窗口打开
+//添加了 <base> 标签，确保所有相对路径都基于原始网页的位置。
+// 使用 sandbox 属性来增加安全性，同时允许脚本执行和同源资源访问。
+// 添加新的事件监听器来处理新窗口打开
+document.getElementById("open-new-window").addEventListener("click", () => {
+  if (generatedCode) {
+    // 创建一个新的 HTML 结构，保留原有的 DOCTYPE 和 html 标签
+    const htmlContent = generatedCode.replace(/<head>[\s\S]*?<\/head>/, (match) => {
+      return match + `
+        <base href="${window.location.origin}/">
+        <style>
+          /* 添加任何额外的样式 */
+        </style>
+        <script>
+          // 只处理外部链接
+          document.addEventListener('click', function(e) {
+            var target = e.target.closest('a');
+            if (target && target.hostname !== window.location.hostname) {
+              e.preventDefault();
+              if (confirm('You are about to leave this page. Are you sure?')) {
+                window.open(target.href, '_blank');
+              }
+            }
+          });
+
+          // 错误处理
+          window.onerror = function(message, source, lineno, colno, error) {
+            console.error('Error:', message, 'at', source, lineno, colno);
+            return true;
+          };
+        </script>
+      `;
+    });
+
+    // 使用 Blob 和 createObjectURL 来创建一个新的 URL
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+
+    // 打开新窗口
+    const newWindow = window.open(url, '_blank', 'width=1024,height=768');
+
+    // 如果弹出窗口被阻止，提醒用户
+    if (!newWindow) {
+      alert("Pop-up blocked. Please allow pop-ups for this site to view the generated website.");
+    } else {
+      // 清理 Blob URL
+      newWindow.onload = function() {
+        URL.revokeObjectURL(url);
+      };
+    }
+  } else {
+    alert("No generated code available. Please generate the code first.");
+  }
+});
+
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 
@@ -465,8 +542,12 @@ export async function callAPIOnce(_storedPRD, userPrompt = null) {
       // Update the output section
       output.textContent = cleanCode;
 
-      // Update the iframe to show the generated code
+      // 更新 iframe
       outputIframe.srcdoc = cleanCode;
+
+      // // 应用缩放
+      // outputIframe.style.transform = "scale(0.5)";
+      // outputIframe.style.transformOrigin = "top left";
 
       // Update stored codes
       iterationCodes[iterationCounter % 4] = cleanCode;
@@ -476,6 +557,7 @@ export async function callAPIOnce(_storedPRD, userPrompt = null) {
       const iterationFrame = document.getElementById(
         `output-iframe-${iterationFrameIndex}`
       );
+
       if (iterationFrame) {
         iterationFrame.srcdoc = cleanCode;
       }

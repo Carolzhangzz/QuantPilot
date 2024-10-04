@@ -1,4 +1,4 @@
-const Anthropic = require("@anthropic-ai/sdk");
+const { Anthropic } = require("@anthropic-ai/sdk");
 const dotenv = require("dotenv");
 
 // Load environment variables
@@ -13,28 +13,27 @@ const anthropic = new Anthropic({
 const DEBUG_MODE = process.env.DEBUG_MODE === "true";
 
 // Utility function to truncate the summary if it's too long
-const truncateSummary = (summary, maxLength = 5000) => {
+const truncateSummary = (summary, maxLength = 30000) => {
   const stringified = JSON.stringify(summary);
-  if (stringified.length > maxLength) {
-    console.warn(`Summary exceeds ${maxLength} characters. Truncating...`);
-    return stringified.slice(0, maxLength) + "...";
-  }
-  return stringified;
+  return stringified.length > maxLength
+    ? `${stringified.slice(0, maxLength)}...`
+    : stringified;
 };
 
 const generateVisualizationCode = async (req, res) => {
   console.log("Received request for visualization code generation");
-  const { userPrompt, summary } = req.body;
+  const { userPrompt, summary, csvHeader } = req.body;
 
   try {
     // Input validation
-    if (!userPrompt || !summary) {
-      console.error("Missing userPrompt or summary");
-      return res.status(400).json({ error: "Missing userPrompt or summary" });
+    if (!userPrompt || !summary || !csvHeader) {
+      console.error("Missing userPrompt, summary, or csvHeader");
+      return res.status(400).json({ error: "Missing required input" });
     }
 
     console.log("User Prompt:", userPrompt);
     console.log("Summary (truncated):", truncateSummary(summary));
+    console.log("CSV Header:", csvHeader);
 
     // Check if API key is set
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -51,62 +50,50 @@ const generateVisualizationCode = async (req, res) => {
     }
 
     const prompt = `
-    Based on the user's abstract prompt and the provided data summary, follow these steps:
-    1. Analyze the data summary to determine which data fields are relevant to the user's high-level requirements.
-    2. Identify which types of visualizations or analyses are needed based on the summary and the goals.
-    3. For each identified visualization or analysis, determine which data fields are required.
-    4. Generate Python code that extracts and processes the required data from the 'data' DataFrame (but does not generate the visualization itself).
-    5. The code should not include any import statements or external dependencies, as those are already handled by the backend.
-    6. Return a JSON object where each key is the name of the visualization or analysis (e.g., 'age_distribution', 'education_gender_comparison') and the value is the corresponding Python code that extracts the data.
+        Based on the user's abstract prompt, the provided data summary, and the CSV header, generate Python code for data analysis and preparation. Follow these guidelines:
 
-    Here is the user's abstract prompt and the data summary:
+        1. Analyze the data summary to determine relevant data fields.
+        2. Use only columns that are present in the CSV Header.
+        3. Analyze the data summary and the CSV header to understand the available data fields, but do not limit your analysis to just the high-level goals outlined in the summary.
+        4. Use the grid layout from the user's sketch to help determine the number and type of data preparations needed. The number of grids or blocks in the sketch should guide how many data preparations are required.
+        5. Additionally, brainstorm and identify interesting patterns, correlations, or potential insights from the data that could provide value beyond the user's stated goals.
+        6. Generate Python code that extracts and processes the required data from the 'data' DataFrame.
+        7. Ensure all output is JSON-serializable. The code should prepare data structures that can be easily converted to JSON, but should not perform the actual visualization.
+        8. The code should not include any import statements or external dependencies, as those are already handled by the backend.
+        9. Return a JSON object where each key is a descriptive name for the data preparation and the value is the corresponding Python code.
 
-    User Prompt: ${userPrompt}
-    Data Summary: ${JSON.stringify(summary)}
+        Focus on creatively leveraging the available columns to provide insights that may not be immediately obvious or requested in the user's goals.
 
-    Return the Python code in this format （no Explanation needed, just code）:
+        Return the Python code in this format (no explanation needed, just code):
 
-    \`\`\`json
-    {
-    "visualization_1": "result = {'key': data['field'].operation().to_dict()}",
-    "visualization_2": "result = {'key': data.groupby(['field1', 'field2']).operation().to_dict()}"
-    }
-    \`\`\`
+        {
+          "age_distribution": "age_counts = data['age'].value_counts().to_dict()",
+          "education_by_gender": "edu_gender = data.groupby(['gender', 'education'])['gender'].count().unstack().to_dict()",
+          "income_distribution": "income_dist = data['income'].value_counts().to_dict()",
+          "brainstormed_insight": "occupation_income = data.groupby('occupation')['income'].mean().to_dict()"
+        }
 
-    For example, if one of the goals is to visualize the age distribution, the Python code might look like this:
+        Please carefully analyze the CSV header, the user sketch, and brainstorm additional potential insights or analyses that could provide value. Ensure all code produces JSON-serializable output and uses only available columns. The code should focus on data preparation and aggregation, not on creating the actual visualizations.
 
-    \`\`\`json
-    {
-    "age_distribution": "result = {'age_data': data['age'].value_counts().to_dict()}",
-    "education_gender_comparison": "result = {'education_by_gender': data.groupby(['education', 'gender']).size().unstack(fill_value=0).to_dict()}"
-    }
-    \`\`\`
+        User Prompt: \${userPrompt}
+        Data Summary: \${JSON.stringify(summary)}
+        CSV Header: \${csvHeader.join(", ")}
+        `;
 
-    Please carefully analyze the data summary to ensure the correct data fields are selected for each visualization or analysis.
-  `;
-
+        
     console.log("Sending request to Anthropic API...");
-    const messagePromise = anthropic.messages.create(
-      {
-        model: "claude-3-haiku-20240307",
-        max_tokens: 2000,
-        messages: [{ role: "user", content: prompt }],
-      },
-      { timeout: 60000 }
-    );
+    const message = await anthropic.messages.create({
+      model: "claude-3-haiku-20240307",
+      max_tokens: 2000,
+      messages: [{ role: "user", content: prompt }],
+    });
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("API request timed out")), 65000)
-    );
-
-    const message = await Promise.race([messagePromise, timeoutPromise]);
-
-    console.log("Received response from Anthropic API");
+    // console.log("Received response from Anthropic API");
     const pythonCode = message.content[0].text;
 
-    // Extract only the Python code from the response
-    const codeMatch = pythonCode.match(/```python\n([\s\S]*?)```/);
-    const extractedCode = codeMatch ? codeMatch[1] : pythonCode;
+    // Extract only the JSON content from the response
+    const jsonMatch = pythonCode.match(/```json\n([\s\S]*?)```/);
+    const extractedCode = jsonMatch ? jsonMatch[1] : pythonCode;
 
     console.log(
       "Generated Python Code (snippet):",
