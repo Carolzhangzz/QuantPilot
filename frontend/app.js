@@ -108,7 +108,7 @@ async function handleFileUploaded(file) {
     const result = await middleApi.generateSummary(file);
     console.log("Summary:", result.summary);
     console.log("Goals:", result.goals);
-
+    console.log("filePath", latestUploadedFilePath);
     // If summary and goals are generated, show a formatted alert
     if (result.summary && result.goals) {
       const formattedSummary = JSON.stringify(result.summary, null, 2);
@@ -179,7 +179,13 @@ document.getElementById("call-api").addEventListener("click", async () => {
   let prompt = customPrompt;
 
   // Use the latest uploaded file path or a default path
-  const filePath = latestUploadedFilePath || "uploads/2020_Census_data.csv";
+  const filePath = latestUploadedFilePath;
+  //如果没有路径，就报错并且 return
+  if (!filePath) {
+    alert("Please upload a file first.");
+    return;
+  }
+
   const allResults = {};
 
   try {
@@ -217,7 +223,6 @@ document.getElementById("call-api").addEventListener("click", async () => {
         } else {
           console.log(`Result for ${category}:`, result);
           allResults[category] = result;
-          console.log("All Results After Running PythonCode:", allResults);
         }
       } catch (error) {
         console.error(
@@ -227,9 +232,11 @@ document.getElementById("call-api").addEventListener("click", async () => {
       }
     }
 
+    console.log("All Results After Running PythonCode:", allResults);
     console.log(
       "All visualization results generated. Calling PRD generation API."
     );
+    
     const prdResult = await api.callGeneratePRD(
       svgContent,
       prompt,

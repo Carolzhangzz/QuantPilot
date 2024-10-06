@@ -137,75 +137,6 @@ def generate_image():
 
     return jsonify({'error': 'Invalid file type, only CSV files are allowed'}), 400
 
-# @app.route('/run_python_code', methods=['POST'])
-# def run_python_code():
-#     if 'file' not in request.files:
-#         return jsonify({'error': 'No file part'}), 400
-
-#     file = request.files['file']
-#     if file.filename == '':
-#         return jsonify({'error': 'No selected file'}), 400
-
-#     if file and file.filename.endswith('.csv'):
-#         filename = secure_filename(file.filename)
-#         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-#         file.save(filepath)
-
-#         python_code = request.form.get('code')
-#         if not python_code:
-#             return jsonify({'error': 'No Python code provided'}), 400
-
-#         try:
-#             data = pd.read_csv(filepath)
-            
-#             # Create a new global namespace for executing the code
-#             global_namespace = {
-#                 'pd': pd,
-#                 'plt': plt,
-#                 'sns': sns,
-#                 'io': io,
-#                 'base64': base64,
-#                 'data': data
-#             }
-            
-#             # Execute the code and get the result
-#             result = eval(python_code, global_namespace)
-
-#             return jsonify({'result': str(result)}), 200
-
-#         except Exception as e:
-#             return jsonify({'error': str(e)}), 500
-
-#     return jsonify({'error': 'Invalid file type, only CSV allowed'}), 400
-
-# @app.route('/run_python_code', methods=['POST'])
-# def run_python_code():
-#     # 获取文件路径
-#     file_path = request.form.get('file')    
-#     print(f"Received file path: {file_path}")
-#     python_code = request.form.get('code')
-
-#     if not file_path or not os.path.exists(file_path):
-#         return jsonify({'error': 'File not found'}), 400
-
-#     try:
-#         # 读取文件内容
-#         data = pd.read_csv(file_path)
-
-#         # 执行传递的 Python 代码
-#         global_namespace = {
-#             'pd': pd,
-#             'data': data
-#         }
-#         print(f"Executing Python code on python side: {python_code}")
-#         print(f"Global namespace on python side: {global_namespace}")
-#         result = eval(python_code, global_namespace)
-
-#         return jsonify({'result': result}), 200
-#     except Exception as e:
-#         print(f"Error while executing Python code: {str(e)}")  # 输出详细错误日志
-#         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/read_csv_header', methods=['POST'])
 def read_csv_header():
@@ -241,14 +172,62 @@ def run_python_code():
         # Attempt to auto-correct common issues
         python_code, warnings = auto_correct_code(python_code, available_columns)
 
+        # Create a local namespace to store results
+        local_namespace = {'pd': pd, 'data': data}
+
+        # Execute the Python code
+        exec(python_code, local_namespace)
+
+        # Get the execution result (all variables defined in the code)
+        result = {k: v for k, v in local_namespace.items() if k not in ['pd', 'data']}
+
+        if not result:
+            return jsonify({'error': 'No result returned from code execution'}), 500
+
+        # Convert result to JSON-serializable format
+        serializable_result = make_serializable(result)
+
+        response = {
+            'result': serializable_result,
+            'warnings': warnings,
+            'available_columns': available_columns
+        }
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        print(f"Error while executing Python code: {str(e)}\n{error_traceback}")
+        return jsonify({
+            'error': str(e), 
+            'traceback': error_traceback,
+            'available_columns': available_columns
+        }), 500
+# def run_python_code():
+    file_path = request.form.get('file')
+    python_code = request.form.get('code')
+
+    if not file_path or not os.path.exists(file_path):
+        return jsonify({'error': f'File not found: {file_path}'}), 400
+
+    try:
+        # Read file content
+        data = pd.read_csv(file_path)
+
+        # Get list of available columns
+        available_columns = data.columns.tolist()
+
+        # Attempt to auto-correct common issues
+        python_code, warnings = auto_correct_code(python_code, available_columns)
+
         # Modify the Python code to ensure it returns a result
         modified_code = f"""
-def execute_code():
-    {python_code}
-    return locals()
+        def execute_code():
+            {python_code}
+            return locals()
 
-result = execute_code()
-"""
+        result = execute_code()
+        """
 
         # Create a local namespace to store results
         local_namespace = {'pd': pd, 'data': data}
@@ -294,60 +273,6 @@ def make_serializable(obj):
     else:
         return str(obj)
 
-# @app.route('/run_python_code', methods=['POST'])
-# def run_python_code():
-#     file_path = request.form.get('file')
-#     python_code = request.form.get('code')
-
-#     if not file_path or not os.path.exists(file_path):
-#         return jsonify({'error': f'File not found: {file_path}'}), 400
-
-#     try:
-#         # Read file content
-#         data = pd.read_csv(file_path)
-
-#         # Get list of available columns
-#         available_columns = data.columns.tolist()
-
-#         # Attempt to auto-correct common issues
-#         python_code, warnings = auto_correct_code(python_code, available_columns)
-
-#         # Create a local namespace to store results
-#         local_namespace = {}
-
-#         # Execute the Python code
-#         exec(python_code, {'pd': pd, 'data': data}, local_namespace)
-
-#         # Get the execution result
-#         result = local_namespace.get('result', None)
-
-#         if result is None:
-#             return jsonify({'error': 'No result returned from code execution'}), 500
-
-#         # Convert result to JSON-serializable format
-#         if isinstance(result, pd.DataFrame):
-#             result = result.to_dict()
-#         elif isinstance(result, pd.Series):
-#             result = result.to_dict()
-#         elif not isinstance(result, dict):
-#             result = {'result': result}
-
-#         response = {
-#             'result': result,
-#             'warnings': warnings,
-#             'available_columns': available_columns
-#         }
-
-#         return jsonify(response), 200
-
-#     except Exception as e:
-#         error_traceback = traceback.format_exc()
-#         print(f"Error while executing Python code: {str(e)}\n{error_traceback}")
-#         return jsonify({
-#             'error': str(e), 
-#             'traceback': error_traceback,
-#             'available_columns': available_columns
-#         }), 500
 
 def auto_correct_code(code, available_columns):
     warnings = []

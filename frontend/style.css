@@ -11,8 +11,8 @@ body {
 
 #file-upload-container {
   position: absolute;
-  top: 60px;
-  left: 110px;
+  top: 340px;
+  right: 50px;
   width: 250px;
   padding: 15px;
   background: linear-gradient(145deg, #ffffff, #f0f4ff);
@@ -364,7 +364,7 @@ textarea {
   top: 80px;
   right: 20px;
   width: 320px;
-  height: 160px;
+  height: 200px;
 }
 
 /* width of the right panel  */
