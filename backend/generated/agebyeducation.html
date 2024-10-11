@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2020 Census Data Explorer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8ff;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #4a90e2;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+        }
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        .chart-title {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #4a90e2;
+        }
+        .filters {
+            margin-bottom: 20px;
+        }
+        select {
+            padding: 8px;
+            margin-right: 10px;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>2020 Census Data Explorer</h1>
+    </header>
+    <div class="container">
+        <div class="chart-container">
+            <h2 class="chart-title">Education Level by Gender</h2>
+            <div class="filters">
+                <select id="educationFilter">
+                    <option value="all">All Education Levels</option>
+                </select>
+                <select id="genderFilter">
+                    <option value="all">All Genders</option>
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                </select>
+            </div>
+            <div id="educationChart"></div>
+        </div>
+        <div class="chart-container">
+            <h2 class="chart-title">Education Level Distribution</h2>
+            <div id="educationPieChart"></div>
+        </div>
+        <div class="chart-container">
+            <h2 class="chart-title">Gender Distribution by Education Level</h2>
+            <div id="genderDistributionChart"></div>
+        </div>
+    </div>
+
+    <script>
+        const educationData = {"10th":{"Female":24,"Male":28},"11th":{"Female":33,"Male":41},"12th":{"Female":16,"Male":30},"1st-4th":{"Female":2,"Male":5},"5th-6th":{"Female":11,"Male":17},"7th-8th":{"Female":8,"Male":21},"9th":{"Female":18,"Male":30},"Assoc-acdm":{"Female":169,"Male":131},"Assoc-voc":{"Female":99,"Male":121},"Bachelors":{"Female":500,"Male":579},"Doctorate":{"Female":36,"Male":66},"HS-grad":{"Female":485,"Male":697},"Masters":{"Female":218,"Male":230},"Preschool":{"Female":1,"Male":4},"Prof-school":{"Female":20,"Male":51},"Some-college":{"Female":376,"Male":433}};
+
+        function createEducationChart(filteredData) {
+            const educationLevels = Object.keys(filteredData);
+            const femaleData = educationLevels.map(level => filteredData[level].Female || 0);
+            const maleData = educationLevels.map(level => filteredData[level].Male || 0);
+
+            const trace1 = {
+                x: educationLevels,
+                y: femaleData,
+                name: 'Female',
+                type: 'bar',
+                marker: {color: '#FF69B4'}
+            };
+
+            const trace2 = {
+                x: educationLevels,
+                y: maleData,
+                name: 'Male',
+                type: 'bar',
+                marker: {color: '#4169E1'}
+            };
+
+            const layout = {
+                barmode: 'group',
+                title: 'Education Level by Gender',
+                xaxis: {title: 'Education Level', tickangle: -45},
+                yaxis: {title: 'Count'},
+                hovermode: 'closest',
+                responsive: true
+            };
+
+            Plotly.newPlot('educationChart', [trace1, trace2], layout);
+        }
+
+        function createEducationPieChart(data) {
+            const educationLevels = Object.keys(data);
+            const totalCounts = educationLevels.map(level => 
+                (data[level].Female || 0) + (data[level].Male || 0)
+            );
+
+            const trace = {
+                labels: educationLevels,
+                values: totalCounts,
+                type: 'pie',
+                textinfo: 'label+percent',
+                hoverinfo: 'label+value',
+                marker: {
+                    colors: ['#FF69B4', '#4169E1', '#32CD32', '#FFD700', '#FF4500', '#8A2BE2', '#00CED1', '#FF6347', '#7B68EE', '#20B2AA', '#FF69B4', '#4169E1', '#32CD32', '#FFD700', '#FF4500']
+                }
+            };
+
+            const layout = {
+                title: 'Distribution of Education Levels',
+                height: 500,
+                width: 700
+            };
+
+            Plotly.newPlot('educationPieChart', [trace], layout);
+        }
+
+        function createGenderDistributionChart(data) {
+            const educationLevels = Object.keys(data);
+            const femalePercentages = educationLevels.map(level => 
+                (data[level].Female / (data[level].Female + data[level].Male)) * 100
+            );
+            const malePercentages = educationLevels.map(level => 
+                (data[level].Male / (data[level].Female + data[level].Male)) * 100
+            );
+
+            const trace1 = {
+                x: educationLevels,
+                y: femalePercentages,
+                name: 'Female',
+                type: 'bar',
+                marker: {color: '#FF69B4'}
+            };
+
+            const trace2 = {
+                x: educationLevels,
+                y: malePercentages,
+                name: 'Male',
+                type: 'bar',
+                marker: {color: '#4169E1'}
+            };
+
+            const layout = {
+                barmode: 'stack',
+                title: 'Gender Distribution by Education Level',
+                xaxis: {title: 'Education Level', tickangle: -45},
+                yaxis: {title: 'Percentage', tickformat: '.0%'},
+                hovermode: 'closest',
+                responsive: true
+            };
+
+            Plotly.newPlot('genderDistributionChart', [trace1, trace2], layout);
+        }
+
+        function updateCharts() {
+            const educationFilter = document.getElementById('educationFilter').value;
+            const genderFilter = document.getElementById('genderFilter').value;
+
+            let filteredData = {...educationData};
+
+            if (educationFilter !== 'all') {
+                filteredData = {[educationFilter]: educationData[educationFilter]};
+            }
+
+            if (genderFilter !== 'all') {
+                Object.keys(filteredData).forEach(level => {
+                    filteredData[level] = {[genderFilter]: filteredData[level][genderFilter]};
+                });
+            }
+
+            createEducationChart(filteredData);
+            createEducationPieChart(filteredData);
+            createGenderDistributionChart(filteredData);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const educationFilter = document.getElementById('educationFilter');
+            Object.keys(educationData).forEach(level => {
+                const option = document.createElement('option');
+                option.value = level;
+                option.textContent = level;
+                educationFilter.appendChild(option);
+            });
+
+            educationFilter.addEventListener('change', updateCharts);
+            document.getElementById('genderFilter').addEventListener('change', updateCharts);
+
+            updateCharts();
+        });
+    </script>
+</body>
+</html>

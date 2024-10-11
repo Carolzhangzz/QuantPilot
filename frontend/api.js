@@ -3,13 +3,12 @@ export let iterationCounter = 0;
 let storedGeneratedCode = "";
 let iterationCodes = ["", "", "", ""]; // store the code for each iteration
 let _storedPRD = null;
-import { generateSummary, generateImage, runPythonCode } from "./middleapi.js";
-import { canvasToSvg } from "./app.js";
+
 // 在全局范围内声明一个变量来存储生成的代码
 let generatedCode = "";
 // 假设你有一个全局变量来存储生成的 Python 代码
 let storedPythonCode = {};
-import * as api from "./api.js";
+
 // 存储生成的 Python 代码
 function setStoredPythonCode(pythonCode) {
   storedPythonCode = pythonCode;
@@ -83,18 +82,19 @@ const outputIframe = document.getElementById("output-iframe");
 
 function parsePythonCode(pythonCodeString) {
   try {
-    // 移除 Markdown 代码块标记
-    let cleanedString = pythonCodeString.replace(/^```json\n|\n```$/g, "");
+    // 如果输入已经是对象，直接返回
+    if (typeof pythonCodeString === "object" && pythonCodeString !== null) {
+      return pythonCodeString;
+    }
 
-    // 解析 JSON
-    const pythonCodeObject = JSON.parse(cleanedString);
-
-    // 返回解析后的对象
+    // 尝试解析 JSON 字符串
+    const pythonCodeObject = JSON.parse(pythonCodeString);
     return pythonCodeObject;
   } catch (error) {
     console.error("Error parsing Python code:", error);
     console.error("Python code string:", pythonCodeString);
-    return null;
+    // 如果解析失败，返回原始字符串
+    return { rawCode: pythonCodeString };
   }
 }
 
@@ -121,22 +121,16 @@ export async function callGenerateVisualizationCode(
 
     if (response.ok) {
       const result = await response.json();
+      console.log("API Response:", result);
+
       // 存储生成的 Python 代码
       setStoredPythonCode(result.pythonCode);
 
-      // 获取存储的 Python 代码
-      const storedPythonCodeString = storedPythonCode;
-      console.log("Stored Python Code (raw):", storedPythonCodeString);
-
       // 解析并转换 Python 代码
-      const parsedPythonCode = parsePythonCode(storedPythonCodeString);
+      const parsedPythonCode = parsePythonCode(result.pythonCode);
       console.log("Parsed Python Code:", parsedPythonCode);
 
-      if (parsedPythonCode) {
-        return parsedPythonCode;
-      } else {
-        throw new Error("Failed to parse Python code");
-      }
+      return parsedPythonCode;
     } else {
       console.error("API call failed with status:", response.status);
       throw new Error(`API call failed with status: ${response.status}`);
@@ -148,14 +142,7 @@ export async function callGenerateVisualizationCode(
   }
 }
 
-
-export async function callGeneratePRD(svgContent, userPrompt, summary) {
-  // updateProgress("Loading...", 0);
-  // callApiButton.style.width = "11rem";
-  // callApiButton.style.backgroundColor = "white";
-  // buttonIcon.src = "/ICONS/load.gif";
-  // buttonText.textContent = "Generating Prd...";
-  // buttonText.style.color = "black";
+export async function callGeneratePRD(userPrompt, summary) {
   try {
     console.log("Attempting to call generate-prd API...");
     const response = await fetch("http://localhost:3000/api/generate-prd", {
@@ -164,18 +151,19 @@ export async function callGeneratePRD(svgContent, userPrompt, summary) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        svg: svgContent,
-        userPrompt: userPrompt,
-        summary: summary, // 添加 summary 到请求体
+        userPrompt,
+        summary,
       }),
     });
-    // console.log("Response received:", response);
+
     if (response.ok) {
-      // animateProgress(0, 12.5, 2000, "Loading..."); // 2 seconds animation
       const result = await response.json();
       setStoredPRD(result.prd);
-      output.textContent = result.prd;
-      return result; // 返回解析后的结果
+      // 假设 output 是一个全局可访问的元素
+      if (typeof output !== "undefined") {
+        output.textContent = result.prd;
+      }
+      return result;
     } else {
       console.error("API call failed, status:", response.status);
       const errorText = await response.text();
@@ -185,82 +173,77 @@ export async function callGeneratePRD(svgContent, userPrompt, summary) {
   } catch (error) {
     console.error("Error in fetch operation:", error);
     console.error("Error stack:", error.stack);
-    throw error; // 重新抛出错误，让调用者处理
-  }
-  //finally {
-  //   callApiButton.style.width = "8rem";
-  //   callApiButton.style.backgroundColor = "#3c6ce4";
-  //   buttonIcon.src = "/ICONS/call-api.svg";
-  //   buttonText.textContent = "Generate";
-  //   buttonText.style.color = "white";
-  // }
-}
-
-export async function generateIdeas(previousCode) {
-  //after the first code generated
-  if (iterationCounter == 1) {
-    animateProgress(12.5, 25, 2000, "Loading..."); // 2 seconds animation
-  }
-
-  if (iterationCounter == 2) {
-    animateProgress(50, 65, 2000, "Loading..."); // 2 seconds animation
-  }
-
-  if (iterationCounter == 3) {
-    animateProgress(75, 85, 2000, "Loading..."); // 2 seconds animation
-  }
-
-  callApiButton.style.width = "11rem";
-  callApiButton.style.backgroundColor = "white";
-  buttonIcon.src = "/ICONS/load.gif";
-  buttonText.textContent = "Generating Ideas...";
-  buttonText.style.color = "black";
-  if (!previousCode) {
-    console.error("Missing required parameters for generating ideas");
-    return "";
-  }
-  try {
-    const requestBody = {
-      previousCode: previousCode,
-    };
-
-    console.log(
-      "Request Body for generate-ideas:",
-      JSON.stringify(requestBody, null, 2)
-    );
-
-    const response = await fetch("http://localhost:3000/api/generate-ideas", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (response.ok) {
-      const result = await response.json();
-      console.log("Received ideas from server:", result.ideas);
-      return result.ideas;
-    } else {
-      console.error(
-        "Failed to generate ideas:",
-        response.status,
-        response.statusText
-      );
-      return "";
-    }
-  } catch (error) {
-    console.error("Error in generating ideas:", error);
     throw error;
   }
 }
+
+// export async function generateIdeas(previousCode) {
+//   //after the first code generated
+//   if (iterationCounter == 1) {
+//     animateProgress(12.5, 25, 2000, "Loading..."); // 2 seconds animation
+//   }
+
+//   if (iterationCounter == 2) {
+//     animateProgress(50, 65, 2000, "Loading..."); // 2 seconds animation
+//   }
+
+//   if (iterationCounter == 3) {
+//     animateProgress(75, 85, 2000, "Loading..."); // 2 seconds animation
+//   }
+
+//   callApiButton.style.width = "11rem";
+//   callApiButton.style.backgroundColor = "white";
+//   buttonIcon.src = "/ICONS/load.gif";
+//   buttonText.textContent = "Generating Ideas...";
+//   buttonText.style.color = "black";
+//   if (!previousCode) {
+//     console.error("Missing required parameters for generating ideas");
+//     return "";
+//   }
+//   try {
+//     const requestBody = {
+//       previousCode: previousCode,
+//     };
+
+//     console.log(
+//       "Request Body for generate-ideas:",
+//       JSON.stringify(requestBody, null, 2)
+//     );
+
+//     const response = await fetch("http://localhost:3000/api/generate-ideas", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify(requestBody),
+//     });
+
+//     if (response.ok) {
+//       const result = await response.json();
+//       console.log("Received ideas from server:", result.ideas);
+//       return result.ideas;
+//     } else {
+//       console.error(
+//         "Failed to generate ideas:",
+//         response.status,
+//         response.statusText
+//       );
+//       return "";
+//     }
+//   } catch (error) {
+//     console.error("Error in generating ideas:", error);
+//     throw error;
+//   }
+// }
 
 export async function DataToWeb(
   _storedPRD,
   userPrompt = null,
   allResults = null
 ) {
-  console.log("calldataToWeb called with storedPRD, userPrompt, and allResults:");
+  console.log(
+    "calldataToWeb called with storedPRD, userPrompt, and allResults:"
+  );
   console.log("storedPRD:", _storedPRD);
   console.log("userPrompt:", userPrompt);
   console.log("allResults:", allResults); // 打印 allResults
@@ -269,10 +252,7 @@ export async function DataToWeb(
   callApiButton.disabled = true;
 
   // Show the lazy load overlay
-  const lazyLoadOverlay = document.querySelector(".lazy-load-overlay");
-  if (lazyLoadOverlay) {
-    lazyLoadOverlay.style.display = "flex";
-  }
+  showLoader();
 
   try {
     const requestBody = {
@@ -283,7 +263,7 @@ export async function DataToWeb(
     };
 
     console.log("Request Body:", JSON.stringify(requestBody, null, 2));
-
+    console.log("the Results:", allResults);
     const response = await fetch("http://localhost:3000/api/generate-code", {
       method: "POST",
       headers: {
@@ -321,9 +301,7 @@ export async function DataToWeb(
       setStoredGeneratedCode(cleanCode);
 
       // Hide the lazy load overlay
-      if (lazyLoadOverlay) {
-        lazyLoadOverlay.style.display = "none";
-      }
+      hideLoader();
 
       // Prevent the default behavior of the iframe
       preventIframeDefaultBehavior(outputIframe);
@@ -363,34 +341,25 @@ export async function DataToWeb(
   } catch (error) {
     console.error("Error in callAPIOnce:", error);
     // Hide the lazy load overlay
-    if (lazyLoadOverlay) {
-      lazyLoadOverlay.style.display = "none";
-    }
+    hideLoader();
     // Show error message to user
     alert(`Failed to generate code: ${error.message}`);
-  } finally {
-    // 启用按钮，防止长时间禁用
-    setTimeout(() => {
-      callApiButton.disabled = false;
-      callApiButton.style.width = "8rem";
-      callApiButton.style.backgroundColor = "#3c6ce4";
-      buttonIcon.src = "/ICONS/call-api.svg";
-      buttonText.textContent = "Generate";
-      buttonText.style.color = "white";
-    }, 3000);
   }
 }
 
-
 // 添加新的事件监听器来处理新窗口打开
-//添加了 <base> 标签，确保所有相对路径都基于原始网页的位置。
+// 添加了 <base> 标签，确保所有相对路径都基于原始网页的位置。
 // 使用 sandbox 属性来增加安全性，同时允许脚本执行和同源资源访问。
 // 添加新的事件监听器来处理新窗口打开
 document.getElementById("open-new-window").addEventListener("click", () => {
   if (generatedCode) {
     // 创建一个新的 HTML 结构，保留原有的 DOCTYPE 和 html 标签
-    const htmlContent = generatedCode.replace(/<head>[\s\S]*?<\/head>/, (match) => {
-      return match + `
+    const htmlContent = generatedCode.replace(
+      /<head>[\s\S]*?<\/head>/,
+      (match) => {
+        return (
+          match +
+          `
         <base href="${window.location.origin}/">
         <style>
           /* 添加任何额外的样式 */
@@ -413,22 +382,26 @@ document.getElementById("open-new-window").addEventListener("click", () => {
             return true;
           };
         </script>
-      `;
-    });
+      `
+        );
+      }
+    );
 
     // 使用 Blob 和 createObjectURL 来创建一个新的 URL
-    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const blob = new Blob([htmlContent], { type: "text/html" });
     const url = URL.createObjectURL(blob);
 
     // 打开新窗口
-    const newWindow = window.open(url, '_blank', 'width=1024,height=768');
+    const newWindow = window.open(url, "_blank", "width=1024,height=768");
 
     // 如果弹出窗口被阻止，提醒用户
     if (!newWindow) {
-      alert("Pop-up blocked. Please allow pop-ups for this site to view the generated website.");
+      alert(
+        "Pop-up blocked. Please allow pop-ups for this site to view the generated website."
+      );
     } else {
       // 清理 Blob URL
-      newWindow.onload = function() {
+      newWindow.onload = function () {
         URL.revokeObjectURL(url);
       };
     }
@@ -436,6 +409,91 @@ document.getElementById("open-new-window").addEventListener("click", () => {
     alert("No generated code available. Please generate the code first.");
   }
 });
+
+
+
+// async function saveGeneratedWebpage(id, content) {
+//   try {
+//     const response = await fetch('/api/save-webpage', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({ id, content }),
+//     });
+
+//     if (!response.ok) {
+//       const errorText = await response.text();
+//       throw new Error(`Failed to save webpage: ${response.status} ${response.statusText}. ${errorText}`);
+//     }
+
+//     const result = await response.json();
+//     console.log("Webpage saved successfully:", result.message);
+//     return true;
+//   } catch (error) {
+//     console.error("Error saving webpage:", error);
+//     alert(`Failed to save the webpage: ${error.message}`);
+//     return false;
+//   }
+// }
+
+// document.getElementById("open-new-window").addEventListener("click", async () => {
+//   if (generatedCode) {
+//     try {
+//       const uniqueId = generateUniqueId();
+//       const htmlContent = generatedCode.replace(
+//         /<head>[\s\S]*?<\/head>/,
+//         (match) => {
+//           return `${match}
+//             <base href="${window.location.origin}/">
+//             <script>
+//               document.addEventListener('click', function(e) {
+//                 var target = e.target.closest('a');
+//                 if (target && target.hostname !== window.location.hostname) {
+//                   e.preventDefault();
+//                   if (confirm('You are about to leave this page. Are you sure?')) {
+//                     window.open(target.href, '_blank');
+//                   }
+//                 }
+//               });
+//             </script>
+//           `;
+//         }
+//       );
+
+//       const saveResult = await saveGeneratedWebpage(uniqueId, htmlContent);
+//       if (saveResult) {
+//         const shareableUrl = `${window.location.origin}/generated/${uniqueId}`;
+//         console.log("Shareable URL:", shareableUrl);
+        
+//         const newWindow = window.open(shareableUrl, "_blank");
+        
+//         if (!newWindow) {
+//           alert("Pop-up blocked. Your shareable URL is: " + shareableUrl);
+//         } else {
+//           newWindow.addEventListener('load', () => {
+//             console.log("New window loaded successfully");
+//           });
+//           newWindow.addEventListener('error', (event) => {
+//             console.error("Error loading new window:", event);
+//           });
+//         }
+//       } else {
+//         throw new Error("Failed to save webpage");
+//       }
+//     } catch (error) {
+//       console.error("Error opening new window:", error);
+//       alert("Failed to generate shareable URL. Please try again.");
+//     }
+//   } else {
+//     alert("No generated code available. Please generate the code first.");
+//   }
+// });
+
+// function generateUniqueId() {
+//   return Date.now().toString(36) + Math.random().toString(36).substr(2);
+// }
+
 
 function escapeHtml(unsafe) {
   return unsafe
@@ -446,317 +504,13 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
-
-// Call the Anthropic API once to generate code
-export async function callAPIOnce(_storedPRD, userPrompt = null) {
-  console.log("callAPIOnce called with storedPRD:", _storedPRD);
-
-  // Update button appearance
-  callApiButton.style.width = "11rem";
-  callApiButton.style.backgroundColor = "white";
-  buttonIcon.src = "/ICONS/load.gif";
-  buttonText.textContent = "Generating Code...";
-  buttonText.style.color = "black";
-
-  // Show the lazy load overlay
-  const lazyLoadOverlay = document.querySelector(".lazy-load-overlay");
-  if (lazyLoadOverlay) {
-    lazyLoadOverlay.style.display = "flex";
-  }
-
-  try {
-    const requestBody = {
-      iteration: iterationCounter,
-      userPrompt: userPrompt,
-      storedPRD: _storedPRD,
-    };
-
-    console.log("Request Body:", JSON.stringify(requestBody, null, 2));
-
-    const response = await fetch("http://localhost:3000/api/generate-code", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log("Response Status:", response.status);
-    const responseText = await response.text();
-    console.log("Response Body:", responseText);
-
-    if (!response.ok) {
-      throw new Error(
-        `API call failed: ${response.status} ${response.statusText}\n${responseText}`
-      );
-    }
-
-    const result = JSON.parse(responseText);
-    let cleanCode = result.generatedCode;
-
-    // 解析生成的代码，提取图表数据
-    const chartData = extractChartData(cleanCode);
-
-    // 更新 iframe
-    updateIframe(`output-iframe-${(iterationCounter % 4) + 1}`, chartData);
-
-    // Remove any non-HTML content before the <!DOCTYPE html>
-    cleanCode = cleanCode.replace(/^[\s\S]*?(<!DOCTYPE html>)/, "$1");
-
-    // Remove any non-HTML content after </html>
-    cleanCode = cleanCode.replace(/(<\/html>)[\s\S]*$/, "$1");
-
-    // Check if the code is generated successfully
-    if (cleanCode.trim()) {
-      // Update iteration loading and progress
-      // updateIterationLoading(iterationCounter + 1, 100, true);
-      // const progressStart = [12.5, 25, 65, 85][iterationCounter % 4];
-      // const progressEnd = [25, 50, 75, 100][iterationCounter % 4];
-      // animateProgress(
-      //   progressStart,
-      //   progressEnd,
-      //   2000,
-      //   `Iteration No.${iterationCounter + 1}`
-      // );
-      updateIterationLoading(1, 100, true);
-      setStoredGeneratedCode(cleanCode);
-
-      // Change the button style
-      callApiButton.style.width = "11rem";
-      buttonIcon.src = "/ICONS/code-done.svg";
-      callApiButton.style.backgroundColor = "rgb(242, 255, 218)";
-      buttonText.textContent = "Code generated";
-      buttonText.style.color = "rgb(138, 192, 58)";
-
-      // Hide the lazy load overlay
-      if (lazyLoadOverlay) {
-        lazyLoadOverlay.style.display = "none";
-      }
-
-      // Create the celebration effect
-      createCelebrationEffect();
-
-      // Prevent the default behavior of the iframe
-      preventIframeDefaultBehavior(outputIframe);
-
-      // Update the output section
-      output.textContent = cleanCode;
-
-      // 更新 iframe
-      outputIframe.srcdoc = cleanCode;
-
-      // // 应用缩放
-      // outputIframe.style.transform = "scale(0.5)";
-      // outputIframe.style.transformOrigin = "top left";
-
-      // Update stored codes
-      iterationCodes[iterationCounter % 4] = cleanCode;
-
-      // Update iteration frame
-      const iterationFrameIndex = (iterationCounter % 4) + 1;
-      const iterationFrame = document.getElementById(
-        `output-iframe-${iterationFrameIndex}`
-      );
-
-      if (iterationFrame) {
-        iterationFrame.srcdoc = cleanCode;
-      }
-
-      // Update the Counter
-      iterationCounter++;
-      console.log("Iteration Counter:", iterationCounter);
-
-      // Switch to the specific panel
-      simulateClickOnPanel(iterationCounter);
-
-      console.log(`This is the ${iterationCounter} time to call the API`);
-      console.log("The content of the prompt:", result.prompt);
-
-      // Check if the user wants to generate another iteration
-      if (iterationCounter < 4) {
-        if (confirm("Do you want to generate another iteration?")) {
-          callApiButton.click();
-        }
-      }
-    } else {
-      throw new Error("Generated code is empty");
-    }
-  } catch (error) {
-    console.error("Error in callAPIOnce:", error);
-
-    // Update UI to show error
-    buttonText.textContent = "Generation failed";
-    callApiButton.style.backgroundColor = "rgb(255, 200, 200)";
-    buttonText.style.color = "red";
-
-    // Hide the lazy load overlay
-    if (lazyLoadOverlay) {
-      lazyLoadOverlay.style.display = "none";
-    }
-
-    // Show error message to user
-    alert(`Failed to generate code: ${error.message}`);
-  } finally {
-    // Reset button state after a delay
-    setTimeout(() => {
-      callApiButton.style.width = "8rem";
-      callApiButton.style.backgroundColor = "#3c6ce4";
-      buttonIcon.src = "/ICONS/call-api.svg";
-      buttonText.textContent = "Generate";
-      buttonText.style.color = "white";
-    }, 3000);
-  }
+export function showLoader() {
+  document.querySelector(".data-viz-loader").style.display = "flex";
 }
 
-// // Call the Anthropic API once to generate code
-// export async function callAPIOnce(_storedPRD, userPrompt = null) {
-//   // if (!apiCallsEnabled) {
-//   //   console.log("API calls are disabled due to previous errors.");
-//   //   return;
-//   // }
-//   console.log("callAPIOnce called with storedPRD:", _storedPRD);
-
-//   // show the lazy load overlay
-//   // const lazyLoadOverlay = document.querySelector(".lazy-load-overlay");
-//   // if (lazyLoadOverlay) {
-//   //   lazyLoadOverlay.style.display = "flex";
-//   // }
-
-//   callApiButton.style.width = "11rem";
-//   callApiButton.style.backgroundColor = "white";
-//   buttonIcon.src = "/ICONS/load.gif";
-//   buttonText.textContent = "Generating Code...";
-//   buttonText.style.color = "black";
-
-//   try {
-//     const requestBody = {
-//       iteration: iterationCounter,
-//       userPrompt: userPrompt, // use the user prompt
-//     };
-
-//     console.log("Request Body:", JSON.stringify(requestBody, null, 2)); // Log the request body
-
-//     const response = await fetch("http://localhost:3000/api/generate-code", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify(requestBody),
-//     });
-
-//     if (response.ok) {
-//       const result = await response.json();
-//       let cleanCode = result.generatedCode;
-
-//       // Remove any non-HTML content before the <!DOCTYPE html>
-//       cleanCode = cleanCode.replace(/^[\s\S]*?(<!DOCTYPE html>)/, "$1");
-
-//       // Remove any non-HTML content after </html>
-//       cleanCode = cleanCode.replace(/(<\/html>)[\s\S]*$/, "$1");
-
-//       // check if the code is generated successfully
-//       if (cleanCode.trim()) {
-//         if (iterationCounter === 0) {
-//           updateIterationLoading(iterationCounter + 1, 100, true);
-//           animateProgress(
-//             12.5,
-//             25,
-//             2000,
-//             `Iteration No.${iterationCounter + 1}`
-//           );
-//         }
-//         if (iterationCounter === 1) {
-//           updateIterationLoading(iterationCounter + 1, 100, true);
-//           animateProgress(25, 50, 2000, `Iteration No.${iterationCounter + 1}`);
-//         }
-//         if (iterationCounter === 2) {
-//           updateIterationLoading(iterationCounter + 1, 100, true);
-//           animateProgress(65, 75, 2000, `Iteration No.${iterationCounter + 1}`);
-//         }
-//         if (iterationCounter === 3) {
-//           updateIterationLoading(iterationCounter + 1, 100, true);
-//           animateProgress(
-//             85,
-//             100,
-//             2000,
-//             `Iteration No.${iterationCounter + 1}`
-//           );
-//         }
-//         setStoredGeneratedCode(cleanCode); //  save the generated code
-
-//         //change the button style
-//         callApiButton.style.width = "11rem";
-//         buttonIcon.src = "/ICONS/code-done.svg";
-//         callApiButton.style.backgroundColor = "rgb(242, 255, 218)";
-//         buttonText.textContent = "Code generated";
-//         buttonText.style.color = "rgb(138, 192, 58)";
-
-//         // auto switch to the preview view after the code is generated
-//         // const previewView = document.querySelector('.preview-view');
-//         // const toggleSizeButton = document.getElementById('toggle-size');
-//         // if (!previewView.classList.contains('expanded')) {
-//         //   previewView.classList.add('expanded');
-//         //   toggleSizeButton.querySelector('img').src = './ICONS/shrink.svg';
-//         // }
-
-//         // make sure the lazy load overlay is hidden after the code is generated
-//         const lazyLoadOverlay = document.querySelector(".lazy-load-overlay");
-//         if (lazyLoadOverlay) {
-//           lazyLoadOverlay.style.display = "none";
-//         }
-
-//         // create the celebration effect
-//         createCelebrationEffect();
-
-//         // prevent the default behavior of the iframe
-//         preventIframeDefaultBehavior(outputIframe);
-//       } else {
-//         buttonText.textContent = "Generate failed";
-//       }
-
-//       // Update the output section
-//       output.textContent = cleanCode;
-
-//       // Update the iframe to show the generated code
-//       const iframe = document.getElementById("output-iframe");
-//       iframe.srcdoc = cleanCode;
-
-//       // 更新存储的代码，0，1，2，3
-//       iterationCodes[iterationCounter % 4] = cleanCode;
-
-//       // Calculate the iteration frame index based on the iteration counter
-//       const iterationFrameIndex = (iterationCounter % 4) + 1;
-//       const iterationFrame = document.getElementById(
-//         `output-iframe-${iterationFrameIndex}`
-//       );
-
-//       //Update the Counter
-//       iterationCounter++;
-//       console.log("Iteration Counter:", iterationCounter); // Print the iteration counter
-//       //make the button click again to call the API
-//       callApiButton.click();
-
-//       // Switch to the specific panel
-//       simulateClickOnPanel(iterationCounter);
-
-//       if (iterationFrame) {
-//         iterationFrame.srcdoc = cleanCode;
-//       }
-//       // Print the current API call count
-//       console.log(`This is the ${iterationCounter} time to call the API`); // Print iteration count
-
-//       // Print the content of the current used prompt in the console
-//       console.log("The content of the prompt:", result.prompt);
-//     } else {
-//       console.log("Response Status:", response.status);
-//       const errorBody = await response.text();
-//       console.log("Response Body:", errorBody);
-//       console.error("Failed to call Anthropic API:", response.statusText);
-//     }
-//   } catch (error) {
-//     console.error("Error in fetch operation:", error);
-//   }
-// }
+export function hideLoader() {
+  document.querySelector(".data-viz-loader").style.display = "none";
+}
 
 // auto switch to the panel that was clicked
 function simulateClickOnPanel(index) {
@@ -818,20 +572,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-//lazy overlay functions
-export function showLazyLoadOverlay() {
-  const lazyLoadOverlay = document.querySelector(".lazy-load-overlay");
-  if (lazyLoadOverlay) {
-    lazyLoadOverlay.style.display = "flex";
-  }
-}
-
-export function hideLazyLoadOverlay() {
-  const lazyLoadOverlay = document.querySelector(".lazy-load-overlay");
-  if (lazyLoadOverlay) {
-    lazyLoadOverlay.style.display = "none";
-  }
-}
 
 // update the preview view function
 function updatePreviewView(index) {
@@ -840,11 +580,11 @@ function updatePreviewView(index) {
   const code = iterationCodes[index - 1];
 
   // show the lazy load overlay
-  showLazyLoadOverlay();
+  showLoader();
   //hide the lazy load overlay
   //if the iterationCounter is greater than or equal to the index of the panel that was clicked
   if (iterationCounter >= parseInt(index)) {
-    hideLazyLoadOverlay();
+    hideLoader();
   }
 
   // update the iframe to show the generated result

@@ -50,35 +50,40 @@ const generateVisualizationCode = async (req, res) => {
     }
 
     const prompt = `
-    You are an expert in data visualization and data analysis, known for your ability to creatively extract insights from complex datasets. Based on the user's abstract prompt, the provided data summary, and the CSV header, generate Python code for data analysis and preparation. Follow these guidelines:
-    
-    Use ONLY columns that are present in the CSV Header. Do not use any column names that are not explicitly listed in the CSV Header.
-    Analyze the data summary and the CSV header to understand the available data fields.
-    Generate Python code that extracts and processes the required data from the 'data' DataFrame.
-    Ensure all output is JSON-serializable. The code should prepare data structures that can be easily converted to JSON, but should not perform the actual visualization.
-    The code should not include any import statements or external dependencies, as those are already handled by the backend.
-    Return a JSON object where each key is a descriptive name for the data preparation and the value is the corresponding Python code.
-    
-    Replace the placeholder column names in the example format with actual column names from the CSV header. Use creative data analysis techniques to brainstorm additional insights beyond the example code. The code should not be limited to just the examples provided, and should include original data analysis approaches based on the available columns.
-    
-    Return the Python code in this format (use the actual CSV header names instead of placeholders, but be creative and include your own ideas):
-    (no explanation needed, just code):)
-    
+  You are an expert in data visualization and data analysis, known for your ability to creatively extract insights from complex datasets. Your task is to generate **only Python code** for data analysis and preparation based on the following user prompt, data summary, and CSV header.
+
+  **User's Prompt (Top Priority)**: "${userPrompt}"
+
+  **Data Summary (Secondary Reference)**: ${JSON.stringify(summary)}
+
+  **Available Columns**: ${csvHeader.join(", ")}
+
+  **Guidelines**:
+
+  1. **No explanations, comments, or extra text. Return only Python code.** Focus on fulfilling the user's request as the top priority, but also generate creative insights from the data based on the provided summary.
+
+  2. Use **only the columns listed in the CSV Header**. Do not assume or use any other columns.
+
+  3. The code must process data from the 'data' DataFrame, preparing the necessary data for analysis. The output must be JSON-serializable and **formatted as a single line of Python code**. Do not use triple quotes, multi-line strings, or any formatting that breaks JSON compatibility.
+
+  4. While focusing on the user prompt, you are encouraged to **brainstorm and identify creative insights** or interesting patterns from the data summary. Use these insights to add further depth to the analysis beyond the user's request.
+
+  5. Return a JSON object where each key describes the analysis and the value is the corresponding Python code, formatted as a single line of code. Ensure the code is **JSON-serializable** and does not use multi-line formatting, triple quotes, or special characters that would break JSON structure.
+
+  6. **No explanations, comments, or import statements**. The focus is on preparing the data for analysis and ensuring JSON-serializable outputs.
+
+  **Desired Format** (replace placeholders with actual CSV headers):
+     - Keys should relate directly to the data or insight, such as using column names or analysis methods in their naming.
+     - Prioritize the user's request first, then add creative insights based on the data summary.
     {
-      "analysis_1": "result_1 = data['column1'].value_counts().to_dict()",
-      "analysis_2": "result_2 = data.groupby(['column2', 'column3'])['column2'].count().unstack().to_dict()",
-      "analysis_3": "result_3 = data['column4'].value_counts().to_dict()",
-      "analysis_4": "result_4 = data.groupby('column5')['column6'].mean().to_dict()"
+      "analysis_by_column1_value_counts": "result_1 = data['column1'].value_counts().to_dict()",
+      "group_analysis_by_column2_and_column3": "result_2 = data.groupby(['column2', 'column3'])['column2'].count().unstack().to_dict()",
+      "correlation_between_column4_and_column5": "result_3 = data['column4'].corr(data['column5']).to_dict()",
+      "median_of_column7_grouped_by_column6": "result_4 = data.groupby('column6')['column7'].median().to_dict()"
     }
-    
-    Ensure all code produces JSON-serializable output and uses only available columns. The code should focus on data preparation and aggregation, not on creating actual visualizations. 
-    Also, consider potential insightful patterns or relationships based on the available data.
-    
-    Available columns (use ONLY these): ${csvHeader.join(", ")}
-    User Prompt: ${userPrompt}
-    Data Summary: ${JSON.stringify(summary)}
-    Remember: Only use column names that are explicitly listed in the CSV Header above. Do not assume the existence of any columns not listed.
-    `;
+
+  **Important**: Return only Python code in the format above. Ensure all code is JSON-serializable, uses **single-line** Python statements, and avoids multi-line formatting.
+`;
 
     console.log("Sending request to Anthropic API...");
     const message = await anthropic.messages.create({

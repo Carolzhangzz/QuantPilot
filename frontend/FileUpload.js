@@ -1,3 +1,4 @@
+
 export function renderFileUpload(container, onFileUploaded) {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
@@ -5,35 +6,31 @@ export function renderFileUpload(container, onFileUploaded) {
     fileInput.style.display = 'none';
 
     const selectButton = document.createElement('button');
+    selectButton.id = 'select-file';
     selectButton.innerHTML = '<span class="upload-icon">📁</span>Select File';
-    selectButton.onclick = () => fileInput.click();
-
-    const uploadButton = document.createElement('button');
-    uploadButton.innerHTML = '<span class="upload-icon">⬆️</span>Upload and Process';
-    uploadButton.style.display = 'none';
+    
+    const statusIcon = document.createElement('span');
+    statusIcon.className = 'status-icon';
+    
+    selectButton.appendChild(statusIcon);
+    
+    selectButton.addEventListener('click', () => fileInput.click());
 
     const fileNameDisplay = document.createElement('div');
     fileNameDisplay.className = 'file-name';
 
-    fileInput.onchange = (event) => {
+    fileInput.onchange = async (event) => {
         const file = event.target.files[0];
         if (file) {
             fileNameDisplay.textContent = `Selected file: ${file.name}`;
-            uploadButton.style.display = 'block';
-            uploadButton.classList.add('upload-ready');
-        }
-    };
-
-    uploadButton.onclick = async () => {
-        const file = fileInput.files[0];
-        if (file) {
+            statusIcon.innerHTML = '<svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
             try {
                 const csvFile = await convertToCSV(file);
-                onFileUploaded(csvFile);
-                alert('File processed and ready to be sent to API.');
+                await onFileUploaded(csvFile);
+                statusIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>';
             } catch (error) {
-                alert('Failed to process the file.');
-                console.error(error);
+                statusIcon.innerHTML = ''; // Remove error icon
+                console.error('Failed to process the file:', error);
             }
         }
     };
@@ -41,7 +38,6 @@ export function renderFileUpload(container, onFileUploaded) {
     container.appendChild(selectButton);
     container.appendChild(fileInput);
     container.appendChild(fileNameDisplay);
-    container.appendChild(uploadButton);
 }
 
 

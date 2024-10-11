@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frontend Diffusion</title>
+    <title>Quant Pilot</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -11,46 +12,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.0/beautify-html.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 </head>
+
 <body>
     <div id="container">
         <div id="file-upload-container"></div>
-        <div id="controls">
-            <button id="hand-move" data-selected-icon="./ICONS/cursor-selected.svg">
-                <img src="./ICONS/cursor.svg" alt="hand" class="icon" id="hand-move-icon">
-            </button>
-            <button id="draw-freehand" data-selected-icon="./ICONS/pencil-selected.svg">
-                <img src="./ICONS/pencil.svg" alt="freehand" class="icon" id="draw-freehand-icon">
-            </button>
-            <button id="draw-line" data-selected-icon="./ICONS/line-selected.svg">
-                <img src="./ICONS/line.svg" alt="line" class="icon" id="draw-line-icon">
-            </button>
-            <button id="draw-rect" data-selected-icon="./ICONS/square-small-selected.svg">
-                <img src="./ICONS/square-small.svg" alt="material" class="icon" id="draw-rect-icon">
-            </button>
-            <button id="add-text" data-selected-icon="./ICONS/text-selected.svg">
-                <img src="./ICONS/text.svg" alt="text" class="icon" id="add-text-icon">
-            </button>
-            <button id="draw-circle" data-selected-icon="./ICONS/circle-small-selected.svg">
-                <img src="./ICONS/circle-small.svg" alt="circle" class="icon" id="draw-circle-icon">
-            </button>
-            <!-- 新增的测试按钮，用于调用后端 Python 代码 -->
-            <!-- <button id="test-python-api">
-                <span>Test Python API</span>
-                <img src="./ICONS/circle-small.svg" alt="circle" class="icon" id="test-python-api">
-            </button> -->
-        </div>
-        <canvas id="drawing-canvas"></canvas>
         <div id="canvas-controls">
-            <div class="button-container">
-                <button id="undo">
-                    <img src="./ICONS/undo.svg" alt="undo">
-                </button>
-                <div class="divider"></div>
-                <button id="redo">
-                    <img src="./ICONS/redo.svg" alt="redo">
-                </button>
-            </div>
-            <button id="call-api">
+            <button id="call-api" style="display: none;">
                 <img src="./ICONS/api.svg" alt="api" class="icon">
                 <span>Generate</span>
             </button>
@@ -70,9 +37,11 @@
     </div>
     <div id="output-container" class="narrow">
         <div class="output-area">
+
             <!-- left-tab-active -->
             <div id="prompt-area" class="content active">
-                <h3>Tell me about your data report website (such as the color scheme and data chart requirements).</h3>
+
+                <h3>What's your question for the data?</h3>
                 <textarea id="custom-prompt-input"></textarea>
             </div>
             <!-- right-tab-active -->
@@ -102,35 +71,47 @@
                     <!-- preview-active -->
                     <div id="iframe-container">
                         <!-- add the lazy loading  -->
-                        <div class="lazy-load-overlay">
-                            <div class="placeholder-website">
-                                <div class="header">
-                                    <div class="logo"></div>
-                                </div>
-                                <div class="main-content">
-                                    <div class="sidebar">
-                                        <div class="line medium"></div>
-                                        <div class="line short"></div>
-                                        <div class="line long"></div>
-                                    </div>
-                                    <div class="content">
-                                        <div class="content-block">
-                                            <div class="image-placeholder large-image"></div>
-                                            <div class="line short"></div>
-                                            <div class="line medium"></div>
-                                        </div>
-                                        <div class="content-block">
-                                            <div class="line medium"></div>
-                                            <div class="gallery">
-                                                <div class="image-placeholder"></div>
-                                                <div class="image-placeholder"></div>
-                                                <div class="image-placeholder"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="data-viz-loader" style="display: none;">
+                            <div class="chart-container">
+                                <div class="bar bar1"></div>
+                                <div class="bar bar2"></div>
+                                <div class="bar bar3"></div>
+                                <div class="bar bar4"></div>
+                                <div class="bar bar5"></div>
                             </div>
+                            <div class="axis-x"></div>
+                            <div class="axis-y"></div>
+                            <div class="loading-text">Generating data visualization...</div>
                         </div>
+
+                        <div class="placeholder-website">
+                            <!-- <div class="header">
+                                <div class="logo"></div>
+                            </div> -->
+                            <!-- <div class="main-content">
+                                <div class="sidebar">
+                                    <div class="line medium"></div>
+                                    <div class="line short"></div>
+                                    <div class="line long"></div>
+                                </div>
+                                <div class="content">
+                                    <div class="content-block">
+                                        <div class="image-placeholder large-image"></div>
+                                        <div class="line short"></div>
+                                        <div class="line medium"></div>
+                                    </div>
+                                    <div class="content-block">
+                                        <div class="line medium"></div>
+                                        <div class="gallery">
+                                            <div class="image-placeholder"></div>
+                                            <div class="image-placeholder"></div>
+                                            <div class="image-placeholder"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> -->
+                        </div>
+
                         <iframe id="output-iframe"></iframe>
                     </div>
                     <!-- code active -->

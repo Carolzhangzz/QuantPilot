@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age-focused Data Report</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        .chart-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .insights {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .chart-container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+          <base href="http://127.0.0.1:8080/">
+          <style>
+            /* 添加任何额外的样式 */
+          </style>
+          <script>
+            // 只处理外部链接
+            document.addEventListener('click', function(e) {
+              var target = e.target.closest('a');
+              if (target && target.hostname !== window.location.hostname) {
+                e.preventDefault();
+                if (confirm('You are about to leave this page. Are you sure?')) {
+                  window.open(target.href, '_blank');
+                }
+              }
+            });
+
+            // 错误处理
+            window.onerror = function(message, source, lineno, colno, error) {
+              console.error('Error:', message, 'at', source, lineno, colno);
+              return true;
+            };
+          </script>
+        
+<body>
+    <div class="container">
+        <h1>Age-focused Data Report</h1>
+        <div class="chart-container">
+            <div class="chart-title">Age Distribution</div>
+            <div id="ageDistributionChart"></div>
+            <div class="insights">
+                Key insight: The age distribution shows peaks around 22-23 and 30-31 years old.
+            </div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">Average Age by Gender</div>
+            <div id="genderAgeChart"></div>
+            <div class="insights">
+                Key insight: Males have a slightly higher average age (42.90) compared to females (42.58).
+            </div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">Average Age by Marital Status</div>
+            <div id="maritalAgeChart"></div>
+            <div class="insights">
+                Key insight: Widowed individuals have the highest average age (60.49), while never-married individuals have the lowest (32.04).
+            </div>
+        </div>
+    </div>
+    <script>
+        // Age Distribution Chart
+        const ageData = [{"17":27,"18":47,"19":62,"20":89,"21":80,"22":122,"23":94,"24":100,"25":106,"26":81,"27":106,"28":102,"29":91,"30":110,"31":115,"32":101,"33":97,"34":82,"35":92,"36":77,"37":112,"38":90,"39":73,"40":85,"41":101,"42":81,"43":70,"44":75,"45":87,"46":84,"47":83,"48":79,"49":86,"50":79,"51":85,"52":75,"53":82,"54":75,"55":93,"56":109,"57":76,"58":87,"59":80,"60":92,"61":81,"62":94,"63":74,"64":65,"65":53,"66":47,"67":52,"68":32,"69":28,"70":21,"71":14,"72":18,"73":20,"74":17,"75":12,"76":6,"77":6,"78":8,"79":5,"80":16,"85":11}];
+        const ages = Object.keys(ageData[0]);
+        const counts = Object.values(ageData[0]);
+
+        Plotly.newPlot('ageDistributionChart', [{
+            x: ages,
+            y: counts,
+            type: 'bar',
+            marker: {
+                color: 'rgba(58, 130, 246, 0.6)',
+                line: {
+                    color: 'rgba(58, 130, 246, 1.0)',
+                    width: 1
+                }
+            }
+        }], {
+            title: 'Age Distribution',
+            xaxis: { title: 'Age' },
+            yaxis: { title: 'Count' }
+        });
+
+        // Gender Age Chart
+        const genderAgeData = {"mean":{"Female":42.57738095238095,"Male":42.90338164251208},"std":{"Female":15.333220694272594,"Male":15.29414655631709}};
+        const genders = Object.keys(genderAgeData.mean);
+        const meanAges = Object.values(genderAgeData.mean);
+
+        Plotly.newPlot('genderAgeChart', [{
+            x: genders,
+            y: meanAges,
+            type: 'bar',
+            marker: {
+                color: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)'],
+                line: {
+                    color: ['rgba(255, 99, 132, 1.0)', 'rgba(54, 162, 235, 1.0)'],
+                    width: 1
+                }
+            }
+        }], {
+            title: 'Average Age by Gender',
+            xaxis: { title: 'Gender' },
+            yaxis: { title: 'Average Age' }
+        });
+
+        // Marital Status Age Chart
+        const maritalAgeData = {"Divorced":52.2046875,"Married-AF-spouse":35.2,"Married-civ-spouse":48.32265317594154,"Married-spouse-absent":45.44705882352941,"Never-married":32.042710706150345,"Separated":45,"Widowed":60.485915492957744};
+        const maritalStatus = Object.keys(maritalAgeData);
+        const avgAges = Object.values(maritalAgeData);
+
+        Plotly.newPlot('maritalAgeChart', [{
+            x: maritalStatus,
+            y: avgAges,
+            type: 'bar',
+            marker: {
+                color: 'rgba(75, 192, 192, 0.6)',
+                line: {
+                    color: 'rgba(75, 192, 192, 1.0)',
+                    width: 1
+                }
+            }
+        }], {
+            title: 'Average Age by Marital Status',
+            xaxis: { title: 'Marital Status', tickangle: 45 },
+            yaxis: { title: 'Average Age' },
+            margin: { b: 150 }
+        });
+    </script>
+</body>
+</html>

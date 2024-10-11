@@ -24,34 +24,46 @@ const generateCode = async (req, res) => {
   }
 
   try {
-    
-    const prompt = `
-    You are a data visualization expert tasked with creating an interactive data report website.
-    Based on the provided Product Requirements Document (PRD), User Prompt, and the dataset results, design a website that effectively presents the data and insights. Follow these guidelines:
-    
-    1. Use Plotly.js for all chart visualizations.
-    2. Ensure the design is clean, professional, and visually appealing.
-    3. Implement interactive features such as filters, tooltips, and drill-down capabilities.
-    4. Use an accessible color scheme with sufficient contrast for readability.
-       Ensure a polished, modern, and user-friendly design using CSS Grid or Flexbox.
-       Include responsive design principles, supporting both desktop and mobile views.
-       Use a minimal and clean UI, with smooth transitions and animations.
-    5. Incorporate responsive design principles for various devices and screen sizes.
-    6. Implement smooth transitions and animations for chart updates.
-    7. Add a summary statistics and key insights next to each chart.
-    8. Include a search or filter functionality for specific data points or subsets.
-    9. Ensure all visualizations have clear titles, labels, and legends where appropriate.
-    
-    Important:
-    - All charts must use Plotly.js and must utilize the dataset provided in 'allResults'. Use the data from 'allResults' to create meaningful and interactive charts.
-    - Ensure the charts are directly based on the data provided in 'allResults' without introducing new data.
-    - Provide the HTML, CSS, and JavaScript needed to create the website without any additional explanations or comments.
-    
-    Product Requirements Document (PRD): ${storedPRD}
-    User's prompt: ${userPrompt}
-    Dataset results: ${JSON.stringify(allResults)}
+        
+      const prompt = `
+      You are a data visualization expert tasked with creating an interactive data report website. 
+      Based on the provided Product Requirements Document (PRD), User Prompt, and the dataset results, design a **visually appealing** and **fully interactive** website that uses Plotly.js to present the data and insights. Follow these guidelines carefully:
+
+      **Key Guidelines:**
+
+      1. Use **Plotly.js** for all chart visualizations, ensuring that **every chart is directly based on the 'allResults' dataset**. The charts **must** use the data provided without introducing any new data. Ensure the dataset from 'allResults' is correctly integrated.
+      
+      2. **Ensure all visualizations are interactive**, including features like:
+        - Tooltips with detailed information
+        - Filters or dropdowns for adjusting the data displayed
+        - Drill-down capabilities to explore subsets of the data
+        
+      3. The website should feature a **sleek color scheme** that adapts to the data insights, using **vibrant and cool tones** to highlight key trends.
+
+      4. Use an **accessible color scheme** with sufficient contrast, and apply **vibrant and cool tones** to highlight trends in the data. Ensure a polished, modern look and feel.
+
+      5. **Make the design responsive** to various screen sizes (desktop and mobile), ensuring smooth navigation and usability across devices.
+
+      6. **Provide smooth animations** and transitions when updating the charts, making the experience feel dynamic.
+
+      7. Display **summary statistics and key insights** next to each chart, summarizing important patterns directly from the dataset.
+
+      8. **Include search or filter functionality** to allow users to quickly locate specific data points or subsets.
+
+      9. Ensure all visualizations have clear **titles, labels, and legends**. Each chart must be easily understood by users.
+
+      **Required Features:**
+      - **At least three Plotly.js data charts** visualizing the data from 'allResults'.
+      - The charts must dynamically reflect the data in the dataset without introducing any external data.
+     
+      **Deliverables**:
+      - Provide the complete HTML, CSS, and JavaScript code needed to create the website with **no additional explanations or comments**.
+
+      Product Requirements Document (PRD): ${storedPRD}
+      User's prompt: ${userPrompt}
+      Dataset results: ${JSON.stringify(allResults)}
     `;
-    
+
   
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,

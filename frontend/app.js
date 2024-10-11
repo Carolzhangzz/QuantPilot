@@ -1,47 +1,49 @@
-// app.js
-// import * as originalApi from "./api.js";
-
-// import * as api from "./api.js";
 import * as api from "./api.js";
 import * as middleApi from "./middleapi.js";
-import {
-  generateSummary,
-  generateImage,
-  runPythonCode,
-  readCSVHeader,
-} from "./middleapi.js";
+import { runPythonCode, readCSVHeader } from "./middleapi.js";
 import { renderFileUpload } from "./FileUpload.js";
 import {
   DataToWeb,
-  callAPIOnce,
-  getStoredPRD,
   callGenerateVisualizationCode,
-  generateIdeas,
-  getStoredGeneratedCode,
-  iterationCounter,
   updateIterationLoading,
   showMultiplePanel,
-  showLazyLoadOverlay,
-  hideLazyLoadOverlay,
+  hideLoader,
+  showLoader
 } from "./api.js";
-const canvas = document.getElementById("drawing-canvas");
-const ctx = canvas.getContext("2d");
-canvas.width = canvas.clientWidth;
-canvas.height = canvas.clientHeight;
-let isDrawing = false;
-let currentMode = "";
-let startX, startY;
+let  allResults = {};
+import { callGeneratePRD } from './api.js';
 let latestUploadedFilePath = "";
-let shapes = [];
-let erasedAreas = [];
-let selectedShape = null;
 let customPrompt = null; // User custom prompt
-let undoStack = []; // Stack to store undo states
-let redoStack = []; // Stack to store redo states
-let summary;
 const callApiButton = document.getElementById("call-api");
-const buttonText = callApiButton.querySelector("span");
-const buttonIcon = callApiButton.querySelector("img");
+let summary;
+document.addEventListener("DOMContentLoaded", () => {
+  const fileUploadContainer = document.getElementById("file-upload-container");
+  renderFileUpload(fileUploadContainer, handleFileUploaded);
+});
+
+
+function showSummaryAndCallApiButton(summary) {
+  // 显示 summary
+  const summaryContainer = document.createElement('div');
+  summaryContainer.id = 'summary-container';
+  summaryContainer.innerHTML = `
+      <h4>Summary:</h4>
+      <p>${summary.summary}</p>
+      <h4>Goals:</h4>
+      <ul>
+          ${summary.goals.map(goal => `<li>${goal.question}</li>`).join('')}
+      </ul>
+  `;
+  
+  // 将 summary 插入到 prompt-area 中
+  const promptArea = document.getElementById('prompt-area');
+  promptArea.insertBefore(summaryContainer, promptArea.firstChild);
+
+  // 显示 call api 按钮
+  const callApiButton = document.getElementById('call-api');
+  callApiButton.style.display = 'flex';
+}
+
 
 // Custom alert function for better formatting
 function showFormattedAlert(title, content) {
@@ -94,66 +96,26 @@ function showFormattedAlert(title, content) {
 // 上传文件给后端的逻辑
 document.addEventListener("DOMContentLoaded", () => {
   const fileUploadContainer = document.getElementById("file-upload-container");
-  // 这个地方是调用了一个函数，这个函数是在 FileUpload.js 里面定义的
   renderFileUpload(fileUploadContainer, handleFileUploaded);
 });
 
-// 上传文件给后端的逻辑 - 新的版本
 async function handleFileUploaded(file) {
   try {
-    // Update the latest uploaded file path
     latestUploadedFilePath = `uploads/${file.name}`;
-
-    // Existing code for generating summary
     const result = await middleApi.generateSummary(file);
     console.log("Summary:", result.summary);
     console.log("Goals:", result.goals);
     console.log("filePath", latestUploadedFilePath);
-    // If summary and goals are generated, show a formatted alert
+
     if (result.summary && result.goals) {
-      const formattedSummary = JSON.stringify(result.summary, null, 2);
-
-      // Format goals
-      const formattedGoals = result.goals
-        .map((goal, index) => {
-          return `Goal ${index + 1}:
-      Question: ${goal.question}
-      Rationale: ${goal.rationale}
-      Visualization: ${goal.visualization}`;
-        })
-        .join("\n\n");
-
-      const alertMessage = `Summary and goals generated successfully!
-    
-    Summary:
-    ${formattedSummary}
-    
-    Goals:
-    ${formattedGoals}`;
-
-      // Use the custom alert function for better formatting
-      showFormattedAlert("Summary and Goals Generated", alertMessage);
+      summary = result;
+      showSummaryAndCallApiButton(summary);
     }
 
-    // You might want to store the summary and goals for later use
-    window.summary = result;
-
-    //  拿到了之后, 一起传给 claude
-    // 这里先用生成好的测试，后面再改
-    // try {
-    //   //使用 AJAX 加载 JSON 文件
-    //   const response = await fetch("./data_summary.json");
-    //   summary = await response.json();
-    //   //假设这个是 Lida 传过来的 summary
-    //   console.log("Summary:", summary.summary);
-    //   console.log("Goals:", summary.goals);
-    // } catch (error) {
-    //   console.error("Error loading data summary:", error);
-    //   alert("Failed to load data summary. Please try again.");
-    //   return;
-    // }
+    return result;
   } catch (error) {
     console.error("Error generating summary:", error);
+    throw error;
   }
 }
 
@@ -175,7 +137,7 @@ document.getElementById("call-api").addEventListener("click", async () => {
 
   console.log("Call API button clicked");
 
-  const svgContent = canvasToSvg();
+  // const svgContent = canvasToSvg();
   let prompt = customPrompt;
 
   // Use the latest uploaded file path or a default path
@@ -186,12 +148,11 @@ document.getElementById("call-api").addEventListener("click", async () => {
     return;
   }
 
-  const allResults = {};
 
   try {
     console.log("Custom Prompt:", customPrompt);
-    console.log("Summary:", window.summary);
-    showLazyLoadOverlay();
+    console.log("Summary:", summary);
+    showLoader();
 
     initializeIterationLoading(1);
     updateIterationLoading(1, 10, false);
@@ -202,7 +163,7 @@ document.getElementById("call-api").addEventListener("click", async () => {
 
     // Include the CSV header in the API call
     const pythonCodeResult = await callGenerateVisualizationCode(
-      window.summary,
+      summary,
       prompt,
       csvHeader
     );
@@ -236,13 +197,8 @@ document.getElementById("call-api").addEventListener("click", async () => {
     console.log(
       "All visualization results generated. Calling PRD generation API."
     );
-    
-    const prdResult = await api.callGeneratePRD(
-      svgContent,
-      prompt,
-      window.summary,
-      allResults
-    );
+
+    const prdResult = await api.callGeneratePRD(prompt, summary);
     console.log("PRD Result:", prdResult);
 
     if (prdResult.prd) {
@@ -253,7 +209,7 @@ document.getElementById("call-api").addEventListener("click", async () => {
       throw new Error("PRD generation failed");
     }
   } catch (error) {
-    hideLazyLoadOverlay();
+    hideLoader();
     console.error("Error in process:", error);
     alert("An error occurred. Please try again.");
   }
@@ -305,14 +261,6 @@ copyCodeButton.addEventListener("click", () => {
       console.error("Failed to copy text: ", err);
     });
 });
-// Get corrected coordinates
-function getCorrectedCoordinates(event) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
-  };
-}
 
 const leftTab = document.getElementById("left-tab");
 const rightTab = document.getElementById("right-tab");
@@ -387,467 +335,3 @@ document.addEventListener("DOMContentLoaded", function () {
     switchCodeView(outputPre, iframeContainer);
   });
 });
-
-// Convert Canvas content to SVG
-export function canvasToSvg() {
-  let svgElements = shapes
-    .map((shape) => {
-      switch (shape.type) {
-        case "rect":
-          return `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" stroke="black" fill="none" />`;
-        case "circle":
-          return `<circle cx="${shape.cx}" cy="${shape.cy}" r="${shape.r}" stroke="black" fill="none" />`;
-        case "line":
-          return `<line x1="${shape.x1}" y1="${shape.y1}" x2="${shape.x2}" y2="${shape.y2}" stroke="black" />`;
-        case "freehand":
-          return `<path d="${shape.path}" stroke="black" fill="none" />`;
-        case "text":
-          return `<text x="${shape.x}" y="${shape.y}" font-family="Arial" font-size="20" fill="black">${shape.text}</text>`;
-      }
-    })
-    .join("\n");
-  let eraseElements = erasedAreas
-    .map((area) => {
-      return `<rect x="${area.x}" y="${area.y}" width="${area.size}" height="${area.size}" fill="white" />`;
-    })
-    .join("\n");
-  return `
-        <svg width="${canvas.width}" height="${canvas.height}" xmlns="http://www.w3.org/2000/svg">
-            ${svgElements}
-            ${eraseElements}
-        </svg>
-    `;
-}
-
-// Start moving
-// Start moving
-function startMoving(event) {
-  const { x, y } = getCorrectedCoordinates(event);
-  selectedShape = shapes.find((shape) => isPointInShape(x, y, shape));
-  if (selectedShape) {
-    isDrawing = true;
-    startX = x;
-    startY = y;
-    offsetX = x - (selectedShape.x || selectedShape.cx || selectedShape.x1); // 定义 offsetX
-    offsetY = y - (selectedShape.y || selectedShape.cy || selectedShape.y1); // 定义 offsetY
-  }
-}
-
-// Moving process
-function moving(event) {
-  if (!isDrawing || !selectedShape) return;
-  const { x, y } = getCorrectedCoordinates(event);
-  const newX = x - offsetX;
-  const newY = y - offsetY;
-
-  switch (selectedShape.type) {
-    case "rect":
-      selectedShape.x = newX;
-      selectedShape.y = newY;
-      break;
-    case "circle":
-      selectedShape.cx = newX;
-      selectedShape.cy = newY;
-      break;
-    case "line":
-      const dx = newX - startX;
-      const dy = newY - startY;
-      selectedShape.x1 += dx;
-      selectedShape.y1 += dy;
-      selectedShape.x2 += dx;
-      selectedShape.y2 += dy;
-      startX = newX;
-      startY = newY;
-      break;
-    case "text":
-      selectedShape.x = newX;
-      selectedShape.y = newY;
-      break;
-  }
-
-  redrawShapes();
-}
-
-// Stop moving
-function stopMoving() {
-  if (isDrawing) {
-    isDrawing = false;
-    selectedShape = null;
-  }
-}
-
-// Check if point is within shape
-function isPointInShape(x, y, shape) {
-  switch (shape.type) {
-    case "rect":
-      return (
-        x >= shape.x &&
-        x <= shape.x + shape.width &&
-        y >= shape.y &&
-        y <= shape.y + shape.height
-      );
-    case "circle":
-      const distX = x - shape.cx;
-      const distY = y - shape.cy;
-      return Math.sqrt(distX * distX + distY * distY) <= shape.r;
-    case "line":
-      const dist1 = Math.sqrt((x - shape.x1) ** 2 + (y - shape.y1) ** 2);
-      const dist2 = Math.sqrt((x - shape.x2) ** 2 + (y - shape.y2) ** 2);
-      const lineDist = Math.sqrt(
-        (shape.x2 - shape.x1) ** 2 + (shape.y2 - shape.y1) ** 2
-      );
-      return dist1 + dist2 <= lineDist + 1;
-    case "text":
-      const textWidth = ctx.measureText(shape.text).width;
-      const textHeight = 20; // Assuming 20px font size
-      return (
-        x >= shape.x &&
-        x <= shape.x + textWidth &&
-        y >= shape.y - textHeight &&
-        y <= shape.y
-      );
-  }
-}
-
-// Clear existing event listeners
-function clearEventListeners() {
-  canvas.onmousedown = null;
-  canvas.onmousemove = null;
-  canvas.onmouseup = null;
-}
-
-// Function to set the drawing mode
-function setMode(mode) {
-  console.log("Setting mode to:", mode);
-  currentMode = mode;
-  clearEventListeners();
-
-  if (mode === "") {
-    console.log("Clearing all modes");
-    return;
-  }
-
-  if (mode === "freehand") {
-    canvas.onmousedown = startFreehand;
-    canvas.onmousemove = freehand;
-    canvas.onmouseup = stopFreehand;
-  } else if (mode === "text") {
-    canvas.onmousedown = addText;
-  } else if (mode === "move") {
-    canvas.onmousedown = startMoving;
-    canvas.onmousemove = moving;
-    canvas.onmouseup = stopMoving;
-  } else {
-    canvas.onmousedown = startDrawing;
-    canvas.onmousemove = drawing;
-    canvas.onmouseup = stopDrawing;
-  }
-}
-
-//function to start drawing
-function startDrawing(event) {
-  isDrawing = true;
-  const { x, y } = getCorrectedCoordinates(event);
-  startX = x;
-  startY = y;
-  ctx.beginPath();
-
-  // clear the redo stack
-  redoStack = [];
-
-  // use the imageData to store the current state of the canvas
-  ctx.putImageData(imageData, 0, 0);
-}
-
-// Drawing process
-function drawing(event) {
-  if (!isDrawing) return;
-  const { x, y } = getCorrectedCoordinates(event);
-  const currentX = x;
-  const currentY = y;
-  ctx.putImageData(imageData, 0, 0);
-
-  ctx.beginPath();
-  switch (currentMode) {
-    case "rect":
-      ctx.rect(startX, startY, currentX - startX, currentY - startY);
-      break;
-    case "circle":
-      const radius = Math.sqrt(
-        Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2)
-      );
-      ctx.arc(startX, startY, radius, 0, Math.PI * 2);
-      break;
-    case "line":
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(currentX, currentY);
-      break;
-  }
-  ctx.stroke();
-}
-
-// Stop drawing
-function stopDrawing(event) {
-  if (isDrawing) {
-    isDrawing = false;
-    const { x, y } = getCorrectedCoordinates(event);
-    const currentX = x;
-    const currentY = y;
-
-    switch (currentMode) {
-      case "rect":
-        shapes.push({
-          type: "rect",
-          x: startX,
-          y: startY,
-          width: currentX - startX,
-          height: currentY - startY,
-        });
-        break;
-      case "circle":
-        const radius = Math.sqrt(
-          Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2)
-        );
-        shapes.push({ type: "circle", cx: startX, cy: startY, r: radius });
-        break;
-      case "line":
-        shapes.push({
-          type: "line",
-          x1: startX,
-          y1: startY,
-          x2: currentX,
-          y2: currentY,
-        });
-        break;
-    }
-
-    saveState();
-    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  }
-}
-
-// Start freehand drawing
-function startFreehand(event) {
-  redoStack = [];
-  isDrawing = true;
-  const { x, y } = getCorrectedCoordinates(event);
-  startX = x;
-  startY = y;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  shapes.push({ type: "freehand", path: `M ${x} ${y}` });
-}
-
-// Freehand drawing process
-function freehand(event) {
-  if (!isDrawing) return;
-  const { x, y } = getCorrectedCoordinates(event);
-  ctx.lineTo(x, y);
-  ctx.stroke();
-  shapes[shapes.length - 1].path += ` L ${x} ${y}`;
-}
-
-// Stop freehand drawing
-function stopFreehand(event) {
-  if (isDrawing) {
-    isDrawing = false;
-    saveState();
-    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    redrawShapes();
-  }
-}
-
-// Add text
-function addText(event) {
-  const { x, y } = getCorrectedCoordinates(event);
-  const text = prompt("Enter text:");
-  if (text) {
-    ctx.font = "20px Arial";
-    ctx.fillText(text, x, y);
-    shapes.push({ type: "text", x: x, y: y, text: text });
-    saveState();
-    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  }
-}
-
-// Select text
-function selectText(event) {
-  const { x, y } = getCorrectedCoordinates(event);
-  selectedShape = shapes.find(
-    (shape) => shape.type === "text" && isPointInText(x, y, shape)
-  );
-  if (selectedShape) {
-    const newText = prompt("Edit text:", selectedShape.text);
-    if (newText !== null) {
-      selectedShape.text = newText;
-      saveState();
-      redrawShapes();
-    }
-  }
-}
-
-// Check if a point is within the text
-function isPointInText(x, y, shape) {
-  const textWidth = ctx.measureText(shape.text).width;
-  const textHeight = 20; // Assuming 20px font size
-  return (
-    x >= shape.x &&
-    x <= shape.x + textWidth &&
-    y >= shape.y - textHeight &&
-    y <= shape.y
-  );
-}
-
-// Move text
-function moveText(event) {
-  if (!isDrawing || !selectedShape) return;
-  const { x, y } = getCorrectedCoordinates(event);
-  const dx = x - startX;
-  const dy = y - startY;
-  selectedShape.x += dx;
-  selectedShape.y += dy;
-  startX = x;
-  startY = y;
-
-  redrawShapes();
-}
-
-// Deselect text
-function deselectText(event) {
-  if (isDrawing) {
-    isDrawing = false;
-    selectedShape = null;
-    saveState();
-    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  }
-}
-
-// Save the current state
-function saveState() {
-  undoStack.push({
-    shapes: JSON.parse(JSON.stringify(shapes)),
-    erasedAreas: JSON.parse(JSON.stringify(erasedAreas)),
-    imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
-  });
-}
-
-document.getElementById("undo").addEventListener("click", () => {
-  if (undoStack.length > 1) {
-    // 保留初始状态
-    redoStack.push(undoStack.pop());
-    const state = undoStack[undoStack.length - 1];
-    shapes = state.shapes;
-    erasedAreas = state.erasedAreas;
-    ctx.putImageData(state.imageData, 0, 0);
-    imageData = state.imageData; // 更新 imageData
-  }
-});
-
-document.getElementById("redo").addEventListener("click", () => {
-  if (redoStack.length > 0) {
-    const state = redoStack.pop();
-    undoStack.push(state);
-    shapes = state.shapes;
-    erasedAreas = state.erasedAreas;
-    ctx.putImageData(state.imageData, 0, 0);
-    imageData = state.imageData; // 更新 imageData
-  }
-});
-
-// Redraw all shapes
-function redrawShapes() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  shapes.forEach((shape) => {
-    switch (shape.type) {
-      case "rect":
-        ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
-        break;
-      case "circle":
-        ctx.beginPath();
-        ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2);
-        ctx.stroke();
-        break;
-      case "line":
-        ctx.beginPath();
-        ctx.moveTo(shape.x1, shape.y1);
-        ctx.lineTo(shape.x2, shape.y2);
-        ctx.stroke();
-        break;
-      case "freehand":
-        ctx.beginPath();
-        const path = new Path2D(shape.path);
-        ctx.stroke(path);
-        break;
-      case "text":
-        ctx.font = "20px Arial";
-        ctx.fillText(shape.text, shape.x, shape.y);
-        break;
-    }
-  });
-  // 应用擦除区域
-  erasedAreas.forEach((area) => {
-    ctx.clearRect(area.x, area.y, area.size, area.size);
-  });
-}
-
-const buttons = document.querySelectorAll("#controls button");
-
-// Function to remove the 'selected' class from all buttons
-function clearSelection() {
-  buttons.forEach((button) => {
-    button.classList.remove("selected");
-  });
-}
-
-// Add click event listener to each button
-buttons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const wasSelected = button.classList.contains("selected");
-
-    clearSelection(); // Clear previous selection if any
-    if (wasSelected) {
-      setMode(""); // Clear current mode and disable canvas
-    } else {
-      button.classList.add("selected"); // Add 'selected' class to clicked button
-      const mode = button.id
-        .replace("draw-", "")
-        .replace("add-", "")
-        .replace("hand-", "")
-        .replace("call-", "")
-        .replace("custom-", "");
-      setMode(mode); // Set mode based on button id
-    }
-
-    // prevent the default behavior
-    event.stopPropagation();
-    event.preventDefault();
-  });
-});
-
-// Select drawing type buttons
-document.getElementById("hand-move").addEventListener("click", () => {
-  console.log("Hand Move button clicked");
-});
-
-// Select drawing type buttons
-document.getElementById("draw-rect").addEventListener("click", () => {
-  console.log("Draw Rectangle button clicked");
-});
-
-document.getElementById("draw-circle").addEventListener("click", () => {
-  console.log("Draw Circle button clicked");
-});
-
-document.getElementById("draw-line").addEventListener("click", () => {
-  console.log("Draw Line button clicked");
-});
-
-document.getElementById("draw-freehand").addEventListener("click", () => {
-  console.log("Draw Freehand button clicked");
-});
-document.getElementById("add-text").addEventListener("click", () => {
-  console.log("Add Text button clicked");
-});
-
-// Initial call to fill code output
-let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
