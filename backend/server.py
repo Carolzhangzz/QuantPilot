@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 import traceback
 import csv
+import json
+import numpy as np
 
 # 加载 .env 文件
 load_dotenv()
@@ -44,8 +46,6 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 lida = Manager(text_gen=llm("openai"))
-
-
 
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = 'http://127.0.0.1:8080'
@@ -87,7 +87,7 @@ def generate_summary():
         data = pd.read_csv(filepath)
 
         summary = lida.summarize(filepath)
-        goals = lida.goals(summary, n=2)
+        goals = lida.goals(summary, n=4)
 
         return jsonify({'summary': summary, 'goals': goals}), 200
 
@@ -98,7 +98,7 @@ def generate_image():
     instruction = request.form.get('instruction')
     user_query = request.form.get('user_query')
     # if not instruction or not user_query:
-    #     return jsonify({'error': 'Instruction and user query are required'}), 400
+    # return jsonify({'error': 'Instruction and user query are required'}), 400
 
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -165,101 +165,54 @@ def run_python_code():
     try:
         # Read file content
         data = pd.read_csv(file_path)
-
+        
         # Get list of available columns
         available_columns = data.columns.tolist()
 
-        # Attempt to auto-correct common issues
-        python_code, warnings = auto_correct_code(python_code, available_columns)
+        # Create a clean namespace
+        local_namespace = {
+            'pd': pd, 
+            'data': data
+        }
 
-        # Create a local namespace to store results
-        local_namespace = {'pd': pd, 'data': data}
-
-        # Execute the Python code
+        # 执行代码并收集结果
         exec(python_code, local_namespace)
 
-        # Get the execution result (all variables defined in the code)
-        result = {k: v for k, v in local_namespace.items() if k not in ['pd', 'data']}
+        # 清理和序列化结果
+        cleaned_results = {}
+        
+        # 查找所有 result_ 开头的变量
+        for var_name, var_value in local_namespace.items():
+            if var_name.startswith('result_'):
+                if isinstance(var_value, dict):
+                    # 如果已经是字典形式，直接使用
+                    cleaned_results[var_name] = var_value
+                elif isinstance(var_value, (pd.Series, pd.DataFrame)):
+                    # 将 Pandas 对象转换为字典
+                    cleaned_results[var_name] = var_value.to_dict()
+                elif isinstance(var_value, (int, float, str, bool)):
+                    # 基本数据类型直接保存
+                    cleaned_results[var_name] = var_value
+                else:
+                    # 其他类型转换为字符串
+                    cleaned_results[var_name] = str(var_value)
 
-        if not result:
-            return jsonify({'error': 'No result returned from code execution'}), 500
+        if not cleaned_results:
+            return jsonify({'error': 'No results found. Make sure to assign results to variables starting with "result_"'}), 400
 
-        # Convert result to JSON-serializable format
-        serializable_result = make_serializable(result)
-
-        response = {
-            'result': serializable_result,
-            'warnings': warnings,
+        return jsonify({
+            'result': cleaned_results,
             'available_columns': available_columns
-        }
-
-        return jsonify(response), 200
+        }), 200
 
     except Exception as e:
         error_traceback = traceback.format_exc()
-        print(f"Error while executing Python code: {str(e)}\n{error_traceback}")
         return jsonify({
-            'error': str(e), 
+            'error': str(e),
             'traceback': error_traceback,
             'available_columns': available_columns
         }), 500
-# def run_python_code():
-    file_path = request.form.get('file')
-    python_code = request.form.get('code')
 
-    if not file_path or not os.path.exists(file_path):
-        return jsonify({'error': f'File not found: {file_path}'}), 400
-
-    try:
-        # Read file content
-        data = pd.read_csv(file_path)
-
-        # Get list of available columns
-        available_columns = data.columns.tolist()
-
-        # Attempt to auto-correct common issues
-        python_code, warnings = auto_correct_code(python_code, available_columns)
-
-        # Modify the Python code to ensure it returns a result
-        modified_code = f"""
-        def execute_code():
-            {python_code}
-            return locals()
-
-        result = execute_code()
-        """
-
-        # Create a local namespace to store results
-        local_namespace = {'pd': pd, 'data': data}
-
-        # Execute the modified Python code
-        exec(modified_code, local_namespace)
-
-        # Get the execution result
-        result = local_namespace.get('result', {})
-
-        if not result:
-            return jsonify({'error': 'No result returned from code execution'}), 500
-
-        # Convert result to JSON-serializable format
-        serializable_result = make_serializable(result)
-
-        response = {
-            'result': serializable_result,
-            'warnings': warnings,
-            'available_columns': available_columns
-        }
-
-        return jsonify(response), 200
-
-    except Exception as e:
-        error_traceback = traceback.format_exc()
-        print(f"Error while executing Python code: {str(e)}\n{error_traceback}")
-        return jsonify({
-            'error': str(e), 
-            'traceback': error_traceback,
-            'available_columns': available_columns
-        }), 500
 
 def make_serializable(obj):
     if isinstance(obj, (pd.DataFrame, pd.Series)):

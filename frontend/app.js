@@ -5,13 +5,10 @@ import { renderFileUpload } from "./FileUpload.js";
 import {
   DataToWeb,
   callGenerateVisualizationCode,
-  updateIterationLoading,
-  showMultiplePanel,
   hideLoader,
   showLoader
 } from "./api.js";
 let  allResults = {};
-import { callGeneratePRD } from './api.js';
 let latestUploadedFilePath = "";
 let customPrompt = null; // User custom prompt
 const callApiButton = document.getElementById("call-api");
@@ -24,20 +21,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function showSummaryAndCallApiButton(summary) {
   // 显示 summary
-  const summaryContainer = document.createElement('div');
-  summaryContainer.id = 'summary-container';
-  summaryContainer.innerHTML = `
-      <h4>Summary:</h4>
-      <p>${summary.summary}</p>
-      <h4>Goals:</h4>
-      <ul>
-          ${summary.goals.map(goal => `<li>${goal.question}</li>`).join('')}
-      </ul>
-  `;
+  // const summaryContainer = document.createElement('div');
+  // summaryContainer.id = 'summary-container';
+  // summaryContainer.innerHTML = `
+  //     <h4>Summary:</h4>
+  //     <p>${summary.summary}</p>
+  //     <h4>Goals:</h4>
+  //     <ul>
+  //         ${summary.goals.map(goal => `<li>${goal.question}</li>`).join('')}
+  //     </ul>
+  // `;
   
-  // 将 summary 插入到 prompt-area 中
-  const promptArea = document.getElementById('prompt-area');
-  promptArea.insertBefore(summaryContainer, promptArea.firstChild);
+  // // 将 summary 插入到 prompt-area 中
+  // const promptArea = document.getElementById('prompt-area');
+  // promptArea.insertBefore(summaryContainer, promptArea.firstChild);
 
   // 显示 call api 按钮
   const callApiButton = document.getElementById('call-api');
@@ -107,6 +104,7 @@ async function handleFileUploaded(file) {
     console.log("Goals:", result.goals);
     console.log("filePath", latestUploadedFilePath);
 
+
     if (result.summary && result.goals) {
       summary = result;
       showSummaryAndCallApiButton(summary);
@@ -154,8 +152,8 @@ document.getElementById("call-api").addEventListener("click", async () => {
     console.log("Summary:", summary);
     showLoader();
 
-    initializeIterationLoading(1);
-    updateIterationLoading(1, 10, false);
+    // initializeIterationLoading(1);
+    // updateIterationLoading(1, 10, false);
 
     // Read the first line of the CSV file
     const csvHeader = await readCSVHeader(filePath);
@@ -168,7 +166,7 @@ document.getElementById("call-api").addEventListener("click", async () => {
       csvHeader
     );
 
-    // Call the API to generate the PRD - 迭代
+    // run the python code for each category
     for (const [category, pythonCode] of Object.entries(pythonCodeResult)) {
       try {
         console.log(`Executing Python code for category: ${category}`);
@@ -198,12 +196,14 @@ document.getElementById("call-api").addEventListener("click", async () => {
       "All visualization results generated. Calling PRD generation API."
     );
 
-    const prdResult = await api.callGeneratePRD(prompt, summary);
+    // at the same time, call the PRD API to generate the PRD
+    const prdResult = await api.callGeneratePRD(prompt, summary, allResults);
     console.log("PRD Result:", prdResult);
 
     if (prdResult.prd) {
-      updateIterationLoading(1, 50, true);
+      // updateIterationLoading(1, 50, true);
       console.log("Calling DataToWeb function:");
+      console.log("All Results sending to the WebGenerate_API:", allResults);
       await DataToWeb(prdResult, prompt, allResults);
     } else {
       throw new Error("PRD generation failed");
@@ -226,13 +226,13 @@ function hideProgressBar() {
 }
 
 //initialize the progress bar for each panel and show the panel for the iteration
-function initializeIterationLoading(index) {
-  showMultiplePanel(index);
-  const frame = document.getElementById(`iteration-${index}`);
-  if (frame) {
-    updateIterationLoading(index, 0, false);
-  }
-}
+// function initializeIterationLoading(index) {
+//   showMultiplePanel(index);
+//   const frame = document.getElementById(`iteration-${index}`);
+//   if (frame) {
+//     updateIterationLoading(index, 0, false);
+//   }
+// }
 
 // Copy code to clipboard
 const copyCodeButton = document.getElementById("copy-code");

@@ -2,7 +2,7 @@ const Anthropic = require("@anthropic-ai/sdk");
 const { setStoredPRD } = require("../utils/state");
 
 const generatePRD = async (req, res) => {
-  const { userPrompt, summary } = req.body;
+  const { userPrompt, summary, allResults } = req.body; // 添加 allResults 参数
 
   try {
     const anthropic = new Anthropic({
@@ -10,19 +10,37 @@ const generatePRD = async (req, res) => {
     });
 
     const prompt = `
-      Please generate a comprehensive Product Requirements Document (PRD) for a data report website based on the following inputs:
-      1. User's prompt: ${userPrompt}
-      2. Data summary: ${JSON.stringify(summary)}
+    Please generate a comprehensive Product Requirements Document (PRD) with data story for a climate data storytelling website. Base your analysis on:
+    
+    1. User's Prompt: ${userPrompt}
+    2. Data Summary: ${JSON.stringify(summary)}
+    3. Data Analysis Results: ${JSON.stringify(allResults)}
+    
+    The PRD should include:
 
-      The PRD should include:
-      1. **Overview**: The website's purpose, key objectives, and main features, focusing on both data visualizations and essential web elements (e.g., navigation, header, footer).
-      2. **Data Visualization Components**: Detailed descriptions of the data visualizations needed, including chart types (e.g., bar charts, line graphs, tables), and how these visualizations should be integrated with user interactions such as filtering, sorting, and tooltips.
-      3. **Basic Website Elements**: Ensure the website includes essential elements such as a navigation bar, header, footer, and a responsive layout. Detail how each of these elements should contribute to a cohesive user experience.
-      4. **Layout and Design Recommendations**: Provide layout suggestions based on the user's requirements, ensuring proper placement of data visualizations and basic elements like navigation, page structure, and calls to action.
-      5. **Insights Presentation**: Propose clear ways to present the key insights from the data summary, ensuring that insights are easy to understand and align with the visualizations.
-      6. **Additional Features and Interactivity**: Suggest any additional features that would enhance the user experience, such as search functionality, user preferences (e.g., dark mode), or downloadable reports.
+    ### 1. Data Story
+    - Analyze the provided data results and create compelling narratives for each visualization
+    - Highlight key trends, patterns, and insights found in the data
+    - Connect these insights to real-world climate impacts and actions
 
-      The document should be structured clearly, making it suitable for developers to implement a modern, user-friendly front-end interface for data reporting.
+    ### 2. Visualization Narratives
+    For each data visualization, provide:
+    - A clear explanation of what the data shows
+    - Key insights and implications
+    - Relevant context and background information
+    - Actionable recommendations based on the data
+
+    ### 3. Website Components & Layout
+    - Specify how to present the data story alongside visualizations
+    - Detail interactive features that enhance the storytelling
+    - Describe transitions and animations that support the narrative
+
+    ### 4. User Experience
+    - How users should interact with the data
+    - How the narrative unfolds as users explore the visualizations
+    - What insights users should take away
+
+    The PRD should integrate the data analysis with compelling storytelling, making climate data accessible and meaningful to users.
     `;
 
     const message = await anthropic.messages.create({
@@ -31,12 +49,7 @@ const generatePRD = async (req, res) => {
       messages: [
         {
           role: "user",
-          content: [
-            {
-              type: "text",
-              text: prompt,
-            },
-          ],
+          content: prompt,
         },
       ],
     });
@@ -49,9 +62,10 @@ const generatePRD = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in generatePRD:", error);
-    res
-      .status(500)
-      .json({ error: "Internal Server Error", details: error.message });
+    res.status(500).json({ 
+      error: "Internal Server Error", 
+      details: error.message 
+    });
   }
 };
 

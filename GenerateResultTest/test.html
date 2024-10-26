@@ -1,218 +1,190 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2020 Census Data Insights</title>
+    <title>Eco-Friendly Climate Data Visualization</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Comic Sans MS', cursive;
+            background-color: #e6f7ff;
+            color: #006633;
             margin: 0;
             padding: 0;
-            background-color: #f0f0f0;
-            color: #333;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-        header {
-            background-color: #000;
-            color: #fff;
-            padding: 20px 0;
+        h1, h2 {
             text-align: center;
+            color: #004d00;
         }
-        h1 {
-            margin: 0;
+        .chart {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
         }
-        nav {
-            background-color: #333;
-            padding: 10px 0;
+        .chart:hover {
+            transform: scale(1.02);
         }
-        nav ul {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-        }
-        nav ul li {
-            margin: 0 10px;
-        }
-        nav ul li a {
-            color: #fff;
-            text-decoration: none;
-        }
-        .chart-container {
-            background-color: #fff;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .info-box {
+            background-color: #ccffcc;
+            border-radius: 10px;
+            padding: 15px;
             margin-bottom: 20px;
-            padding: 20px;
         }
-        .chart-title {
-            font-size: 1.2em;
-            margin-bottom: 10px;
-        }
-        .insights {
-            background-color: #f9f9f9;
-            border-left: 4px solid #333;
-            padding: 10px;
-            margin-top: 10px;
+        .eco-icon {
+            font-size: 24px;
+            margin-right: 10px;
         }
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
+            .chart {
+                width: 100%;
+            }
+        }
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(45deg, #e6f7ff, #ccffcc);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
             }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>2020 Census Data Insights</h1>
-    </header>
-    <nav>
-        <ul>
-            <li><a href="#age-distribution">Age Distribution</a></li>
-            <li><a href="#education-gender">Education by Gender</a></li>
-            <li><a href="#occupation">Occupation</a></li>
-            <li><a href="#income">Income Distribution</a></li>
-        </ul>
-    </nav>
+    <div class="animated-bg"></div>
     <div class="container">
-        <div id="age-distribution" class="chart-container">
-            <h2 class="chart-title">Age Distribution</h2>
-            <div id="age-chart"></div>
-            <div class="insights">
-                <h3>Key Insights:</h3>
-                <ul id="age-insights"></ul>
-            </div>
+        <h1>🌍 Eco-Friendly Climate Data Visualization 🌿</h1>
+        
+        <div class="info-box">
+            <span class="eco-icon">💧</span>
+            <strong>Real Reasons Behind Wastewater Treatment Measures:</strong>
+            <p>Wastewater treatment is crucial for protecting public health and the environment. However, it also contributes to greenhouse gas emissions. This visualization helps us understand the impact and find ways to improve treatment processes while reducing emissions.</p>
         </div>
-        <div id="education-gender" class="chart-container">
-            <h2 class="chart-title">Education Level by Gender</h2>
-            <div id="education-chart"></div>
-            <div class="insights">
-                <h3>Key Insights:</h3>
-                <ul id="education-insights"></ul>
-            </div>
-        </div>
-        <div id="occupation" class="chart-container">
-            <h2 class="chart-title">Occupation Distribution</h2>
-            <div id="occupation-chart"></div>
-            <div class="insights">
-                <h3>Key Insights:</h3>
-                <ul id="occupation-insights"></ul>
-            </div>
-        </div>
-        <div id="income" class="chart-container">
-            <h2 class="chart-title">Income Distribution</h2>
-            <div id="income-chart"></div>
-            <div class="insights">
-                <h3>Key Insights:</h3>
-                <ul id="income-insights"></ul>
-            </div>
-        </div>
+
+        <div class="chart" id="emissionsByCountry"></div>
+        <div class="chart" id="annualEmissionsTrend"></div>
+        <div class="chart" id="emissionsByGasType"></div>
     </div>
+
     <script>
-        // Age Distribution Chart
-        const ageData = {
-            x: Object.keys(data.age_distribution.age_counts),
-            y: Object.values(data.age_distribution.age_counts),
+        const emissionsByCountry = {
+            x: ['CHN', 'IND', 'BRA', 'IDN', 'USA', 'RUS', 'NGA', 'PAK', 'BGD', 'MEX'],
+            y: [9100, 6021, 3122, 1968, 1107, 1021, 902, 834, 718, 703],
             type: 'bar',
-            marker: {color: '#333'}
+            name: 'Emissions by Country (Million Tons)',
+            marker: {
+                color: '#4CAF50',
+                line: {
+                    color: '#45a049',
+                    width: 1.5
+                }
+            }
         };
-        Plotly.newPlot('age-chart', [ageData], {
-            title: 'Age Distribution',
-            xaxis: {title: 'Age'},
-            yaxis: {title: 'Count'}
+
+        const annualEmissionsTrend = {
+            x: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022'],
+            y: [4962, 5047, 5129, 5231, 5291, 5360, 5450, 5516],
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Annual Emissions (Million Tons)',
+            line: {
+                color: '#2196F3',
+                width: 3
+            },
+            marker: {
+                color: '#1976D2',
+                size: 8
+            }
+        };
+
+        const emissionsByGasType = {
+            labels: ['CO2e (100yr)', 'CO2e (20yr)', 'CH4', 'N2O'],
+            values: [5352896, 15213464, 176110, 1592],
+            type: 'pie',
+            name: 'Emissions by Gas Type',
+            marker: {
+                colors: ['#FFC107', '#FF9800', '#FF5722', '#795548']
+            }
+        };
+
+        const layout = {
+            font: { family: 'Comic Sans MS, cursive' },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            margin: { t: 50, b: 50, l: 50, r: 50 },
+            title: {
+                font: {
+                    size: 24,
+                    color: '#004d00'
+                }
+            }
+        };
+
+        Plotly.newPlot('emissionsByCountry', [emissionsByCountry], {
+            ...layout,
+            title: 'Top 10 Countries - Wastewater Treatment Emissions',
+            yaxis: { title: 'Emissions (Million Tons)' }
         });
 
-        // Education Level by Gender Chart
-        const educationData = data.education_by_gender.education_by_gender;
-        const educationLevels = Object.keys(educationData);
-        const maleData = educationLevels.map(level => educationData[level].Male);
-        const femaleData = educationLevels.map(level => educationData[level].Female);
-
-        const trace1 = {
-            x: educationLevels,
-            y: maleData,
-            name: 'Male',
-            type: 'bar'
-        };
-        const trace2 = {
-            x: educationLevels,
-            y: femaleData,
-            name: 'Female',
-            type: 'bar'
-        };
-        Plotly.newPlot('education-chart', [trace1, trace2], {
-            barmode: 'group',
-            title: 'Education Level by Gender',
-            xaxis: {title: 'Education Level'},
-            yaxis: {title: 'Count'}
+        Plotly.newPlot('annualEmissionsTrend', [annualEmissionsTrend], {
+            ...layout,
+            title: 'Annual Wastewater Treatment Emissions Trend',
+            yaxis: { title: 'Emissions (Million Tons)' }
         });
 
-        // Occupation Distribution Chart
-        const occupationData = data.occupation_distribution.occupation_counts;
-        const occupations = Object.keys(occupationData);
-        const occupationCounts = Object.values(occupationData);
-
-        const occupationTrace = {
-            labels: occupations,
-            values: occupationCounts,
-            type: 'pie'
-        };
-        Plotly.newPlot('occupation-chart', [occupationTrace], {
-            title: 'Occupation Distribution'
+        Plotly.newPlot('emissionsByGasType', [emissionsByGasType], {
+            ...layout,
+            title: 'Emissions by Gas Type from Wastewater Treatment'
         });
 
-        // Income Distribution Chart
-        const incomeData = data.income_distribution.income_counts;
-        const incomeRanges = Object.keys(incomeData);
-        const incomeCounts = Object.values(incomeData);
-
-        const incomeTrace = {
-            x: incomeRanges,
-            y: incomeCounts,
-            type: 'bar',
-            marker: {color: '#333'}
-        };
-        Plotly.newPlot('income-chart', [incomeTrace], {
-            title: 'Income Distribution',
-            xaxis: {title: 'Income Range'},
-            yaxis: {title: 'Count'}
-        });
-
-        // Generate insights
-        function generateInsights(data, elementId) {
-            const insights = [];
-            const values = Object.values(data);
-            const keys = Object.keys(data);
-            const max = Math.max(...values);
-            const min = Math.min(...values);
-            const maxKey = keys[values.indexOf(max)];
-            const minKey = keys[values.indexOf(min)];
-            const sum = values.reduce((a, b) => a + b, 0);
-            const avg = sum / values.length;
-
-            insights.push(`Highest value: ${maxKey} (${max})`);
-            insights.push(`Lowest value: ${minKey} (${min})`);
-            insights.push(`Average value: ${avg.toFixed(2)}`);
-
-            const insightsList = document.getElementById(elementId);
-            insights.forEach(insight => {
-                const li = document.createElement('li');
-                li.textContent = insight;
-                insightsList.appendChild(li);
+        function addInteractivity() {
+            const charts = document.querySelectorAll('.chart');
+            charts.forEach(chart => {
+                chart.on('plotly_hover', function(data) {
+                    chart.style.boxShadow = '0 6px 12px rgba(0,0,0,0.2)';
+                });
+                chart.on('plotly_unhover', function(data) {
+                    chart.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                });
             });
         }
 
-        generateInsights(data.age_distribution.age_counts, 'age-insights');
-        generateInsights(data.education_by_gender.education_by_gender, 'education-insights');
-        generateInsights(data.occupation_distribution.occupation_counts, 'occupation-insights');
-        generateInsights(data.income_distribution.income_counts, 'income-insights');
+        window.onload = addInteractivity;
     </script>
 </body>
 </html>
+              <script>
+                  // 防止默认行为
+                  document.addEventListener('DOMContentLoaded', function() {
+                      document.querySelectorAll('a').forEach(a => {
+                          a.addEventListener('click', (e) => e.preventDefault());
+                      });
+                      document.querySelectorAll('form').forEach(form => {
+                          form.addEventListener('submit', (e) => e.preventDefault());
+                      });
+                  });
+              </script>
+          

@@ -13,7 +13,7 @@ body {
 #container {
   width: 100%;
   min-height: 100vh;
-  background-image: url("./images/data6.png");
+  background-image: url("./images/climate2.png");
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -97,7 +97,7 @@ body {
   background-color: rgba(60, 108, 228, 0.6);
   color: #ffffff;
   border: 2px solid #c9d8ff;
-  padding: 10px 20px;
+  padding: 10px 0px 10px 20px;
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -109,7 +109,7 @@ body {
   justify-content: center;
   position: fixed;
   right: 680px;
-  width: 200px;
+  width: 180px;
   top: 380px;
   box-shadow: 0 0 10px #3c6ce4, 0 0 20px #3c6ce4;
   text-shadow: 0 0 5px #3c6ce4;
@@ -220,7 +220,7 @@ body {
 
 #canvas-controls #call-api {
   display: none;
-  right: 680px;
+  right: 675px;
   top: 520px;
   background-color: rgba(60, 108, 228, 0.6);
   color: #ffffff;
@@ -236,7 +236,7 @@ body {
   align-items: center;
   justify-content: center;
   position: fixed;
-  width: 200px;
+  width: 180px;
   box-shadow: 0 0 10px #3c6ce4, 0 0 20px #3c6ce4;
   text-shadow: 0 0 5px #3c6ce4;
 }
@@ -327,8 +327,6 @@ h2 {
   justify-content: flex-end; /* 将标签容器靠右对齐 */
 }
 
-
-
 .content {
   padding: 20px;
 }
@@ -368,35 +366,6 @@ h2 {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-#prompt-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 15px;
-}
-
-#prompt-area h3 {
-  color: #e0e0ff;
-  margin: 0 0 10px 0;
-  font-size: 16px;
-}
-
-#prompt-area textarea {
-  flex: 1;
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: #ffffff;
-  font-family: "Poppins", Arial, sans-serif;
-  font-size: 14px;
-  resize: none;
-  outline: none;
-}
-
-#prompt-area textarea::placeholder {
-  color: rgba(224, 224, 255, 0.5);
 }
 
 
@@ -450,9 +419,9 @@ h2 {
     font-size: 20px;
     flex-wrap: nowrap;
     position: fixed;
-    top: 20px;
-    width: 400px;
-    left: 120px;
+    top: 5px;
+    max-width: 600px;
+    left: 56px;
     color: white;
 }
 
@@ -1099,84 +1068,7 @@ h2 {
   }
 }
 
-/* Responsive styles */
-@media screen and (max-width: 1366px) {
-  #select-file {
-    right: 5%;
-    width: 180px;
-    font-size: 14px;
-  }
 
-  #canvas-controls #call-api {
-    right: 5%;
-    width: 16rem;
-    font-size: 14px;
-  }
-
-  #output-container.narrow {
-    right: 5%;
-    width: 90%;
-    max-width: 550px;
-  }
-
-  #prompt-area h3 {
-    font-size: 18px;
-    width: 90%;
-    max-width: 350px;
-    left: 5%;
-  }
-
-  #prompt-area textarea {
-    width: 90%;
-    max-width: 550px;
-    right: 5%;
-  }
-}
-
-@media screen and (max-width: 1024px) {
-  .tabs {
-    top: 20px;
-    right: 20px;
-  }
-
-  #select-file {
-    top: 300px;
-    width: 160px;
-    font-size: 14px;
-  }
-
-  #canvas-controls #call-api {
-    top: 380px;
-    width: 14rem;
-    font-size: 14px;
-  }
-
-  #output-container.narrow {
-    top: 80px;
-    height: 180px;
-  }
-
-  #prompt-area h3 {
-    font-size: 16px;
-    width: 80%;
-    max-width: 300px;
-    left: 10%;
-  }
-
-  #prompt-area textarea {
-    width: 90%;
-    max-width: 500px;
-    height: 100px;
-    top: 60px;
-  }
-
-  #iframe-container iframe,
-  .preview-view #output {
-    width: 90%;
-    height: 500px;
-    margin-left: 5%;
-  }
-}
 
 @media screen and (max-width: 768px) {
   #select-file {

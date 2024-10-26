@@ -42,37 +42,37 @@ function hideProgressBar() {
   document.getElementById("progress-container").style.display = "none";
 }
 
-export function showMultiplePanel(index) {
-  const panel = document.getElementById("multiple-panel");
-  panel.style.display = "flex";
-  for (let i = 1; i <= 4; i++) {
-    const frame = document.getElementById(`iteration-${i}`);
-    if (frame) {
-      if (i <= index) {
-        frame.style.display = "block"; // show the frame
-      } else {
-        frame.style.display = "none"; // hide the frame
-      }
-    }
-  }
-}
+// export function showMultiplePanel(index) {
+//   const panel = document.getElementById("multiple-panel");
+//   panel.style.display = "flex";
+//   for (let i = 1; i <= 4; i++) {
+//     const frame = document.getElementById(`iteration-${i}`);
+//     if (frame) {
+//       if (i <= index) {
+//         frame.style.display = "block"; // show the frame
+//       } else {
+//         frame.style.display = "none"; // hide the frame
+//       }
+//     }
+//   }
+// }
 
 // function for the multiple panel progress bar
-export function updateIterationLoading(index, progress, isComplete = false) {
-  const frame = document.getElementById(`iteration-${index}`);
-  if (frame) {
-    const loadingOverlay = frame.querySelector(".loading-overlay");
-    const loadingBar = frame.querySelector(".loading-bar");
-    if (loadingBar) {
-      loadingBar.style.width = `${progress}%`;
-    }
-    if (isComplete) {
-      if (loadingOverlay) {
-        loadingOverlay.classList.add("hidden");
-      }
-    }
-  }
-}
+// export function updateIterationLoading(index, progress, isComplete = false) {
+//   const frame = document.getElementById(`iteration-${index}`);
+//   if (frame) {
+//     const loadingOverlay = frame.querySelector(".loading-overlay");
+//     const loadingBar = frame.querySelector(".loading-bar");
+//     if (loadingBar) {
+//       loadingBar.style.width = `${progress}%`;
+//     }
+//     if (isComplete) {
+//       if (loadingOverlay) {
+//         loadingOverlay.classList.add("hidden");
+//       }
+//     }
+//   }
+// }
 
 //CAll the API to Generate PRD from the SVG content
 const callApiButton = document.getElementById("call-api");
@@ -142,7 +142,7 @@ export async function callGenerateVisualizationCode(
   }
 }
 
-export async function callGeneratePRD(userPrompt, summary) {
+export async function callGeneratePRD(prompt, summary, allResults) {
   try {
     console.log("Attempting to call generate-prd API...");
     const response = await fetch("http://localhost:3000/api/generate-prd", {
@@ -151,8 +151,9 @@ export async function callGeneratePRD(userPrompt, summary) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        userPrompt,
-        summary,
+        userPrompt: prompt,
+        summary: summary,
+        allResults: allResults // 添加数据分析结果
       }),
     });
 
@@ -236,116 +237,210 @@ export async function callGeneratePRD(userPrompt, summary) {
 //   }
 // }
 
-export async function DataToWeb(
-  _storedPRD,
-  userPrompt = null,
-  allResults = null
-) {
-  console.log(
-    "calldataToWeb called with storedPRD, userPrompt, and allResults:"
-  );
-  console.log("storedPRD:", _storedPRD);
-  console.log("userPrompt:", userPrompt);
-  console.log("allResults:", allResults); // 打印 allResults
-
+export async function DataToWeb(_storedPRD, userPrompt = null, allResults = null) {
   // 禁用按钮，防止多次点击
+  const callApiButton = document.getElementById('call-api');
+  const outputIframe = document.getElementById('output-iframe');
+  const output = document.getElementById('output');
+  
   callApiButton.disabled = true;
-
+  
   // Show the lazy load overlay
   showLoader();
-
+  
   try {
-    const requestBody = {
-      iteration: iterationCounter,
-      userPrompt: userPrompt,
-      storedPRD: _storedPRD,
-      allResults: allResults, // 确保 allResults 被正确传递
-    };
-
-    console.log("Request Body:", JSON.stringify(requestBody, null, 2));
-    console.log("the Results:", allResults);
-    const response = await fetch("http://localhost:3000/api/generate-code", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    console.log("Response Status:", response.status);
-    const responseText = await response.text();
-    console.log("Response Body:", responseText);
-
-    if (!response.ok) {
-      throw new Error(
-        `API call failed: ${response.status} ${response.statusText}\n${responseText}`
-      );
-    }
-
-    const result = JSON.parse(responseText);
-    let cleanCode = result.generatedCode;
-
-    // Remove any non-HTML content before the <!DOCTYPE html>
-    cleanCode = cleanCode.replace(/^[\s\S]*?(<!DOCTYPE html>)/, "$1");
-
-    // Remove any non-HTML content after </html>
-    cleanCode = cleanCode.replace(/(<\/html>)[\s\S]*$/, "$1");
-
-    // Replace all local development server references with relative paths
-    cleanCode = cleanCode.replace(/http:\/\/127\.0\.0\.1:8080\//g, "./");
-    cleanCode = cleanCode.replace(/http:\/\/localhost:8080\//g, "./");
-
-    // Check if the code is generated successfully
-    if (cleanCode.trim()) {
-      updateIterationLoading(1, 100, true);
-      setStoredGeneratedCode(cleanCode);
-
-      // Hide the lazy load overlay
-      hideLoader();
-
-      // Prevent the default behavior of the iframe
-      preventIframeDefaultBehavior(outputIframe);
-
-      // 保存生成的代码
-      generatedCode = cleanCode;
-
-      // Update the output section
-      output.textContent = cleanCode;
-
-      // Update the iframe to show the generated code
-      outputIframe.srcdoc = cleanCode;
-
-      // Update stored codes
-      iterationCodes[iterationCounter % 4] = cleanCode;
-
-      // Update iteration frame
-      const iterationFrameIndex = (iterationCounter % 4) + 1;
-      const iterationFrame = document.getElementById(
-        `output-iframe-${iterationFrameIndex}`
-      );
-
-      if (iterationFrame) {
-        iterationFrame.srcdoc = cleanCode;
+      const requestBody = {
+          iteration: iterationCounter,
+          userPrompt: userPrompt,
+          storedPRD: _storedPRD,
+          allResults: allResults,
+      };
+      
+      const response = await fetch("http://localhost:3000/api/generate-code", {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+          throw new Error(`API call failed: ${response.status} ${response.statusText}`);
       }
-
-      console.log(`This is the ${iterationCounter} time to call the API`);
-      // Update the Counter
-      iterationCounter++;
-      console.log("Iteration Counter:", iterationCounter);
-
-      // Switch to the specific panel
-      simulateClickOnPanel(iterationCounter);
-    } else {
-      throw new Error("Generated code is empty");
-    }
+      
+      const result = JSON.parse(await response.text());
+      let cleanCode = result.generatedCode;
+      
+      // 清理代码
+      cleanCode = cleanCode
+          .replace(/^[\s\S]*?(<!DOCTYPE html>)/, "$1")
+          .replace(/(<\/html>)[\s\S]*$/, "$1")
+          .replace(/http:\/\/127\.0\.0\.1:8080\//g, "./")
+          .replace(/http:\/\/localhost:8080\//g, "./");
+          
+      if (cleanCode.trim()) {
+          // 更新代码显示
+          output.textContent = cleanCode;
+          
+          // 创建一个新的 iframe 元素
+          const tempIframe = document.createElement('iframe');
+          tempIframe.id = 'output-iframe';
+          tempIframe.classList.add('output-iframe');
+          
+          // 设置 iframe 加载完成的处理函数
+          tempIframe.onload = () => {
+              hideLoader();
+              callApiButton.disabled = false;
+          };
+          
+          // 使用 srcdoc 注入 HTML
+          tempIframe.srcdoc = `
+              ${cleanCode}
+              <script>
+                  // 防止默认行为
+                  document.addEventListener('DOMContentLoaded', function() {
+                      document.querySelectorAll('a').forEach(a => {
+                          a.addEventListener('click', (e) => e.preventDefault());
+                      });
+                      document.querySelectorAll('form').forEach(form => {
+                          form.addEventListener('submit', (e) => e.preventDefault());
+                      });
+                  });
+              </script>
+          `;
+          
+          // 替换旧的 iframe
+          const oldIframe = document.getElementById('output-iframe');
+          if (oldIframe && oldIframe.parentNode) {
+              oldIframe.parentNode.replaceChild(tempIframe, oldIframe);
+          }
+          
+          // 更新迭代相关的状态
+          generatedCode = cleanCode;
+          iterationCodes[iterationCounter % 4] = cleanCode;
+          iterationCounter++;
+          
+      } else {
+          throw new Error("Generated code is empty");
+      }
   } catch (error) {
-    console.error("Error in callAPIOnce:", error);
-    // Hide the lazy load overlay
-    hideLoader();
-    // Show error message to user
-    alert(`Failed to generate code: ${error.message}`);
+      console.error("Error in DataToWeb:", error);
+      hideLoader();
+      alert(`Failed to generate code: ${error.message}`);
+  } finally {
+      callApiButton.disabled = false;
   }
 }
+// export async function DataToWeb(
+//   _storedPRD,
+//   userPrompt = null,
+//   allResults = null
+// ) {
+//   console.log(
+//     "calldataToWeb called with storedPRD, userPrompt, and allResults:"
+//   );
+//   console.log("storedPRD:", _storedPRD);
+//   console.log("userPrompt:", userPrompt);
+//   console.log("allResults:", allResults); // 打印 allResults
+
+//   // 禁用按钮，防止多次点击
+//   callApiButton.disabled = true;
+
+//   // Show the lazy load overlay
+//   showLoader();
+
+//   try {
+//     const requestBody = {
+//       iteration: iterationCounter,
+//       userPrompt: userPrompt,
+//       storedPRD: _storedPRD,
+//       allResults: allResults, // 确保 allResults 被正确传递
+//     };
+
+//     console.log("Request Body:", JSON.stringify(requestBody, null, 2));
+//     console.log("the Results:", allResults);
+//     const response = await fetch("http://localhost:3000/api/generate-code", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify(requestBody),
+//     });
+
+//     console.log("Response Status:", response.status);
+//     const responseText = await response.text();
+//     console.log("Response Body:", responseText);
+
+//     if (!response.ok) {
+//       throw new Error(
+//         `API call failed: ${response.status} ${response.statusText}\n${responseText}`
+//       );
+//     }
+
+//     const result = JSON.parse(responseText);
+//     let cleanCode = result.generatedCode;
+
+//     // Remove any non-HTML content before the <!DOCTYPE html>
+//     cleanCode = cleanCode.replace(/^[\s\S]*?(<!DOCTYPE html>)/, "$1");
+
+//     // Remove any non-HTML content after </html>
+//     cleanCode = cleanCode.replace(/(<\/html>)[\s\S]*$/, "$1");
+
+//     // Replace all local development server references with relative paths
+//     cleanCode = cleanCode.replace(/http:\/\/127\.0\.0\.1:8080\//g, "./");
+//     cleanCode = cleanCode.replace(/http:\/\/localhost:8080\//g, "./");
+
+//     // Check if the code is generated successfully
+//     if (cleanCode.trim()) {
+//       // updateIterationLoading(1, 100, true);
+//       setStoredGeneratedCode(cleanCode);
+
+//       // Hide the lazy load overlay
+//       hideLoader();
+
+//       // Prevent the default behavior of the iframe
+//       preventIframeDefaultBehavior(outputIframe);
+
+//       // 保存生成的代码
+//       generatedCode = cleanCode;
+
+//       // Update the output section
+//       output.textContent = cleanCode;
+
+//       // Update the iframe to show the generated code
+//       outputIframe.srcdoc = cleanCode;
+
+//       // Update stored codes
+//       iterationCodes[iterationCounter % 4] = cleanCode;
+
+//       // Update iteration frame
+//       // const iterationFrameIndex = (iterationCounter % 4) + 1;
+//       // const iterationFrame = document.getElementById(
+//       //   `output-iframe-${iterationFrameIndex}`
+//       // );
+
+//       // if (iterationFrame) {
+//       //   iterationFrame.srcdoc = cleanCode;
+//       // }
+
+//       console.log(`This is the ${iterationCounter} time to call the API`);
+//       // Update the Counter
+//       iterationCounter++;
+//       console.log("Iteration Counter:", iterationCounter);
+
+//       // Switch to the specific panel
+//       // simulateClickOnPanel(iterationCounter);
+//     } else {
+//       throw new Error("Generated code is empty");
+//     }
+//   } catch (error) {
+//     console.error("Error in callAPIOnce:", error);
+//     // Hide the lazy load overlay
+//     hideLoader();
+//     // Show error message to user
+//     alert(`Failed to generate code: ${error.message}`);
+//   }
+// }
 
 // 添加新的事件监听器来处理新窗口打开
 // 添加了 <base> 标签，确保所有相对路径都基于原始网页的位置。
@@ -412,89 +507,6 @@ document.getElementById("open-new-window").addEventListener("click", () => {
 
 
 
-// async function saveGeneratedWebpage(id, content) {
-//   try {
-//     const response = await fetch('/api/save-webpage', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({ id, content }),
-//     });
-
-//     if (!response.ok) {
-//       const errorText = await response.text();
-//       throw new Error(`Failed to save webpage: ${response.status} ${response.statusText}. ${errorText}`);
-//     }
-
-//     const result = await response.json();
-//     console.log("Webpage saved successfully:", result.message);
-//     return true;
-//   } catch (error) {
-//     console.error("Error saving webpage:", error);
-//     alert(`Failed to save the webpage: ${error.message}`);
-//     return false;
-//   }
-// }
-
-// document.getElementById("open-new-window").addEventListener("click", async () => {
-//   if (generatedCode) {
-//     try {
-//       const uniqueId = generateUniqueId();
-//       const htmlContent = generatedCode.replace(
-//         /<head>[\s\S]*?<\/head>/,
-//         (match) => {
-//           return `${match}
-//             <base href="${window.location.origin}/">
-//             <script>
-//               document.addEventListener('click', function(e) {
-//                 var target = e.target.closest('a');
-//                 if (target && target.hostname !== window.location.hostname) {
-//                   e.preventDefault();
-//                   if (confirm('You are about to leave this page. Are you sure?')) {
-//                     window.open(target.href, '_blank');
-//                   }
-//                 }
-//               });
-//             </script>
-//           `;
-//         }
-//       );
-
-//       const saveResult = await saveGeneratedWebpage(uniqueId, htmlContent);
-//       if (saveResult) {
-//         const shareableUrl = `${window.location.origin}/generated/${uniqueId}`;
-//         console.log("Shareable URL:", shareableUrl);
-        
-//         const newWindow = window.open(shareableUrl, "_blank");
-        
-//         if (!newWindow) {
-//           alert("Pop-up blocked. Your shareable URL is: " + shareableUrl);
-//         } else {
-//           newWindow.addEventListener('load', () => {
-//             console.log("New window loaded successfully");
-//           });
-//           newWindow.addEventListener('error', (event) => {
-//             console.error("Error loading new window:", event);
-//           });
-//         }
-//       } else {
-//         throw new Error("Failed to save webpage");
-//       }
-//     } catch (error) {
-//       console.error("Error opening new window:", error);
-//       alert("Failed to generate shareable URL. Please try again.");
-//     }
-//   } else {
-//     alert("No generated code available. Please generate the code first.");
-//   }
-// });
-
-// function generateUniqueId() {
-//   return Date.now().toString(36) + Math.random().toString(36).substr(2);
-// }
-
-
 function escapeHtml(unsafe) {
   return unsafe
     .replace(/&/g, "&amp;")
@@ -549,28 +561,28 @@ function updateProgress(stage, progress) {
 }
 
 // multiple panel toggle function
-document.addEventListener("DOMContentLoaded", () => {
-  const multiplePanel = document.getElementById("multiple-panel");
-  let selectedFrame = null;
+// document.addEventListener("DOMContentLoaded", () => {
+//   const multiplePanel = document.getElementById("multiple-panel");
+//   let selectedFrame = null;
 
-  multiplePanel.addEventListener("click", (event) => {
-    const iterationFrame = event.target.closest(".iteration-frame");
-    if (iterationFrame) {
-      const index = iterationFrame.dataset.index;
+//   multiplePanel.addEventListener("click", (event) => {
+//     const iterationFrame = event.target.closest(".iteration-frame");
+//     if (iterationFrame) {
+//       const index = iterationFrame.dataset.index;
 
-      // remove the selected effect from the previous frame
-      if (selectedFrame) {
-        selectedFrame.classList.remove("selected");
-      }
+//       // remove the selected effect from the previous frame
+//       if (selectedFrame) {
+//         selectedFrame.classList.remove("selected");
+//       }
 
-      // add new selected effect
-      iterationFrame.classList.add("selected");
-      selectedFrame = iterationFrame;
+//       // add new selected effect
+//       iterationFrame.classList.add("selected");
+//       selectedFrame = iterationFrame;
 
-      updatePreviewView(index);
-    }
-  });
-});
+//       updatePreviewView(index);
+//     }
+//   });
+// });
 
 
 // update the preview view function
@@ -610,58 +622,58 @@ function updatePreviewView(index) {
 }
 // zoom in and out the iframe
 document.addEventListener("DOMContentLoaded", function () {
-  const toggleSizeButton = document.getElementById("toggle-size");
+  // const toggleSizeButton = document.getElementById("toggle-size");
   const previewView = document.querySelector(".preview-view");
   const iframeContainer = document.getElementById("iframe-container");
   const output = document.getElementById("output");
 
-  toggleSizeButton.addEventListener("click", function () {
-    previewView.classList.toggle("expanded");
-    if (previewView.classList.contains("expanded")) {
-      toggleSizeButton.querySelector("img").src = "./ICONS/shrink.svg";
-    } else {
-      toggleSizeButton.querySelector("img").src = "./ICONS/expand.svg";
-    }
+  // toggleSizeButton.addEventListener("click", function () {
+  //   previewView.classList.toggle("expanded");
+  //   if (previewView.classList.contains("expanded")) {
+  //     toggleSizeButton.querySelector("img").src = "./ICONS/shrink.svg";
+  //   } else {
+  //     toggleSizeButton.querySelector("img").src = "./ICONS/expand.svg";
+  //   }
 
-    if (iframeContainer.classList.contains("active")) {
-      const iframe = iframeContainer.querySelector("iframe");
+  if (iframeContainer.classList.contains("active")) {
+    const iframe = iframeContainer.querySelector("iframe");
 
-      //save the current srcdoc content
-      const currentContent = iframe.srcdoc;
+    //save the current srcdoc content
+    const currentContent = iframe.srcdoc;
 
-      //clear the iframe content
-      iframe.srcdoc = "";
+    //clear the iframe content
+    iframe.srcdoc = "";
 
-      // use the setTimeout to ensure the content is reloaded in the next event loop
-      setTimeout(() => {
-        // set the content back to the iframe
-        iframe.srcdoc = currentContent;
+    // use the setTimeout to ensure the content is reloaded in the next event loop
+    setTimeout(() => {
+      // set the content back to the iframe
+      iframe.srcdoc = currentContent;
 
-        iframe.onload = function () {
-          iframe.contentDocument.body.addEventListener(
-            "click",
-            function (e) {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log("Clicked inside iframe");
-            },
-            true
-          );
+      iframe.onload = function () {
+        iframe.contentDocument.body.addEventListener(
+          "click",
+          function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Clicked inside iframe");
+          },
+          true
+        );
 
-          //prevent the form submission in the iframe
-          iframe.contentDocument.body.addEventListener(
-            "submit",
-            function (e) {
-              e.preventDefault();
-              console.log("Form submission prevented in iframe");
-            },
-            true
-          );
-        };
-      }, 0);
-    }
-  });
+        //prevent the form submission in the iframe
+        iframe.contentDocument.body.addEventListener(
+          "submit",
+          function (e) {
+            e.preventDefault();
+            console.log("Form submission prevented in iframe");
+          },
+          true
+        );
+      };
+    }, 0);
+  }
 });
+
 
 // celebration-effect
 function createCelebrationEffect() {

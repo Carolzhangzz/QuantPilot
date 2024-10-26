@@ -37,11 +37,9 @@
     </div>
     <div id="output-container" class="narrow">
         <div class="output-area">
-
             <!-- left-tab-active -->
             <div id="prompt-area" class="content active">
-
-                <h3>What's your question for the data?</h3>
+                <h3>What's your question for your climate change data?</h3>
                 <textarea id="custom-prompt-input"></textarea>
             </div>
             <!-- right-tab-active -->
@@ -65,10 +63,7 @@
                     <span id="progress">0%</span>
                 </div>
                 <div class="preview-view">
-                    <button id="toggle-size">
-                        <img src="./ICONS/expand.svg" alt="expand" class="icon">
-                    </button>
-                    <!-- preview-active -->
+
                     <div id="iframe-container">
                         <!-- add the lazy loading  -->
                         <div class="data-viz-loader" style="display: none;">
@@ -84,33 +79,6 @@
                             <div class="loading-text">Generating data visualization...</div>
                         </div>
 
-                        <div class="placeholder-website">
-                            <!-- <div class="header">
-                                <div class="logo"></div>
-                            </div> -->
-                            <!-- <div class="main-content">
-                                <div class="sidebar">
-                                    <div class="line medium"></div>
-                                    <div class="line short"></div>
-                                    <div class="line long"></div>
-                                </div>
-                                <div class="content">
-                                    <div class="content-block">
-                                        <div class="image-placeholder large-image"></div>
-                                        <div class="line short"></div>
-                                        <div class="line medium"></div>
-                                    </div>
-                                    <div class="content-block">
-                                        <div class="line medium"></div>
-                                        <div class="gallery">
-                                            <div class="image-placeholder"></div>
-                                            <div class="image-placeholder"></div>
-                                            <div class="image-placeholder"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> -->
-                        </div>
 
                         <iframe id="output-iframe"></iframe>
                     </div>
@@ -118,7 +86,7 @@
                     <pre id="output" class="active"></pre>
                 </div>
                 <!-- add multi-panel area -->
-                <div id="multiple-panel">
+                <!-- <div id="multiple-panel">
                     <div class="iteration-frame" id="iteration-1" data-index="1">
                         <div class="loading-overlay">
                             <div class="loading-bar"></div>
@@ -155,7 +123,7 @@
                             <span class="iteration-number">4</span>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
