@@ -19,160 +19,229 @@
             margin: 0 auto;
             padding: 20px;
         }
-        h1, h2 {
+        h1 {
             text-align: center;
             color: #004d00;
+            font-size: 2.5em;
+            margin-bottom: 30px;
         }
-        .chart {
+        .chart-container {
             background-color: #ffffff;
             border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
-            overflow: hidden;
+            padding: 20px;
             transition: transform 0.3s ease;
         }
-        .chart:hover {
+        .chart-container:hover {
             transform: scale(1.02);
         }
-        .info-box {
-            background-color: #ccffcc;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
+        .narrative {
+            margin-top: 20px;
+            font-size: 1.1em;
+            line-height: 1.6;
         }
-        .eco-icon {
-            font-size: 24px;
-            margin-right: 10px;
+        .eco-tip {
+            background-color: #ccffcc;
+            border-left: 5px solid #00cc00;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 15px 15px 0;
+        }
+        .eco-tip h3 {
+            margin-top: 0;
+            color: #004d00;
         }
         @media (max-width: 768px) {
-            .chart {
-                width: 100%;
+            .container {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 2em;
+            }
+            .chart-container {
+                padding: 10px;
             }
         }
-        .animated-bg {
+        .leaf {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: linear-gradient(45deg, #e6f7ff, #ccffcc);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            width: 40px;
+            height: 40px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%2300cc00" d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/></svg>');
+            pointer-events: none;
+            z-index: 9999;
+            animation: fall 10s linear infinite;
         }
-        @keyframes gradientBG {
+        @keyframes fall {
             0% {
-                background-position: 0% 50%;
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 0;
             }
-            50% {
-                background-position: 100% 50%;
+            10% {
+                opacity: 1;
             }
             100% {
-                background-position: 0% 50%;
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
             }
         }
     </style>
 </head>
 <body>
-    <div class="animated-bg"></div>
     <div class="container">
-        <h1>🌍 Eco-Friendly Climate Data Visualization 🌿</h1>
+        <h1>Eco-Friendly Climate Data Visualization</h1>
         
-        <div class="info-box">
-            <span class="eco-icon">💧</span>
-            <strong>Real Reasons Behind Wastewater Treatment Measures:</strong>
-            <p>Wastewater treatment is crucial for protecting public health and the environment. However, it also contributes to greenhouse gas emissions. This visualization helps us understand the impact and find ways to improve treatment processes while reducing emissions.</p>
+        <div class="chart-container">
+            <div id="emissionsByCountry"></div>
+            <div class="narrative">
+                <p>This chart shows CO2 equivalent emissions from wastewater treatment by country. China, India, and Brazil are among the top emitters, highlighting the need for targeted emission reduction strategies in these regions.</p>
+            </div>
+            <div class="eco-tip">
+                <h3>What You Can Do:</h3>
+                <p>Reduce water waste at home by fixing leaks and using water-efficient appliances. This helps decrease the amount of wastewater that needs treatment.</p>
+            </div>
         </div>
-
-        <div class="chart" id="emissionsByCountry"></div>
-        <div class="chart" id="annualEmissionsTrend"></div>
-        <div class="chart" id="emissionsByGasType"></div>
+        
+        <div class="chart-container">
+            <div id="emissionsTrendOverTime"></div>
+            <div class="narrative">
+                <p>This trend shows a consistent increase in emissions from 2015 to 2022, indicating that current measures to curb emissions are insufficient. We need enhanced global efforts and innovative solutions in wastewater management.</p>
+            </div>
+            <div class="eco-tip">
+                <h3>What You Can Do:</h3>
+                <p>Support local initiatives for upgrading wastewater treatment facilities. Advocate for policies that promote sustainable water management in your community.</p>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div id="emissionsByGasType"></div>
+            <div class="narrative">
+                <p>Different gases contribute to climate change in various ways. CO2 equivalent emissions over 20 years (co2e_20yr) make up the largest portion, followed by methane (ch4) and nitrous oxide (n2o). These gases have different global warming potentials and require targeted strategies for reduction.</p>
+            </div>
+            <div class="eco-tip">
+                <h3>What You Can Do:</h3>
+                <p>Compost organic waste instead of disposing it down the drain. This reduces the amount of methane produced during wastewater treatment.</p>
+            </div>
+        </div>
     </div>
 
     <script>
-        const emissionsByCountry = {
-            x: ['CHN', 'IND', 'BRA', 'IDN', 'USA', 'RUS', 'NGA', 'PAK', 'BGD', 'MEX'],
-            y: [9100, 6021, 3122, 1968, 1107, 1021, 902, 834, 718, 703],
-            type: 'bar',
-            name: 'Emissions by Country (Million Tons)',
-            marker: {
-                color: '#4CAF50',
-                line: {
-                    color: '#45a049',
-                    width: 1.5
-                }
-            }
-        };
-
-        const annualEmissionsTrend = {
-            x: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022'],
-            y: [4962, 5047, 5129, 5231, 5291, 5360, 5450, 5516],
-            type: 'scatter',
-            mode: 'lines+markers',
-            name: 'Annual Emissions (Million Tons)',
-            line: {
-                color: '#2196F3',
-                width: 3
+        const data = {
+            emissionsByCountry: [
+                { country: "CHN", emissions: 9100323923 },
+                { country: "IND", emissions: 6021094908 },
+                { country: "USA", emissions: 1107147735 },
+                { country: "BRA", emissions: 3122144778 },
+                { country: "IDN", emissions: 1967843374 }
+            ],
+            emissionsTrendOverTime: {
+                x: [
+                    "2015-01-01", "2016-01-01", "2017-01-01", "2018-01-01",
+                    "2019-01-01", "2020-01-01", "2021-01-01", "2022-01-01"
+                ],
+                y: [
+                    4962320107, 5046598240, 5129175348, 5230551197,
+                    5291379005, 5359692812, 5450117093, 5516148589
+                ]
             },
-            marker: {
-                color: '#1976D2',
-                size: 8
-            }
+            emissionsByGasType: [
+                { gas: "co2e_100yr", value: 10834262223 },
+                { gas: "co2e_20yr", value: 30792051815 },
+                { gas: "ch4", value: 356446631 },
+                { gas: "n2o", value: 3221723 }
+            ],
+            annualEmissions: 5732734
         };
 
-        const emissionsByGasType = {
-            labels: ['CO2e (100yr)', 'CO2e (20yr)', 'CH4', 'N2O'],
-            values: [5352896, 15213464, 176110, 1592],
-            type: 'pie',
-            name: 'Emissions by Gas Type',
-            marker: {
-                colors: ['#FFC107', '#FF9800', '#FF5722', '#795548']
-            }
-        };
-
-        const layout = {
-            font: { family: 'Comic Sans MS, cursive' },
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0)',
-            margin: { t: 50, b: 50, l: 50, r: 50 },
-            title: {
-                font: {
-                    size: 24,
-                    color: '#004d00'
+        function createEmissionsByCountryChart() {
+            const trace = {
+                x: data.emissionsByCountry.map(d => d.country),
+                y: data.emissionsByCountry.map(d => d.emissions),
+                type: 'bar',
+                marker: {
+                    color: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854'],
+                    line: {
+                        color: '#ffffff',
+                        width: 2
+                    }
                 }
-            }
-        };
-
-        Plotly.newPlot('emissionsByCountry', [emissionsByCountry], {
-            ...layout,
-            title: 'Top 10 Countries - Wastewater Treatment Emissions',
-            yaxis: { title: 'Emissions (Million Tons)' }
-        });
-
-        Plotly.newPlot('annualEmissionsTrend', [annualEmissionsTrend], {
-            ...layout,
-            title: 'Annual Wastewater Treatment Emissions Trend',
-            yaxis: { title: 'Emissions (Million Tons)' }
-        });
-
-        Plotly.newPlot('emissionsByGasType', [emissionsByGasType], {
-            ...layout,
-            title: 'Emissions by Gas Type from Wastewater Treatment'
-        });
-
-        function addInteractivity() {
-            const charts = document.querySelectorAll('.chart');
-            charts.forEach(chart => {
-                chart.on('plotly_hover', function(data) {
-                    chart.style.boxShadow = '0 6px 12px rgba(0,0,0,0.2)';
-                });
-                chart.on('plotly_unhover', function(data) {
-                    chart.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                });
-            });
+            };
+            const layout = {
+                title: 'Emissions by Country',
+                xaxis: { title: 'Country' },
+                yaxis: { title: 'Emissions (CO2 equivalent)' },
+                font: { family: 'Comic Sans MS, cursive' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+            Plotly.newPlot('emissionsByCountry', [trace], layout, {responsive: true});
         }
 
-        window.onload = addInteractivity;
+        function createEmissionsTrendChart() {
+            const trace = {
+                x: data.emissionsTrendOverTime.x,
+                y: data.emissionsTrendOverTime.y,
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: {
+                    color: '#66c2a5',
+                    width: 3
+                },
+                marker: {
+                    color: '#fc8d62',
+                    size: 8
+                }
+            };
+            const layout = {
+                title: 'Emissions Trend Over Time',
+                xaxis: { title: 'Year' },
+                yaxis: { title: 'Emissions (CO2 equivalent)' },
+                font: { family: 'Comic Sans MS, cursive' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+            Plotly.newPlot('emissionsTrendOverTime', [trace], layout, {responsive: true});
+        }
+
+        function createEmissionsByGasTypeChart() {
+            const trace = {
+                labels: data.emissionsByGasType.map(d => d.gas),
+                values: data.emissionsByGasType.map(d => d.value),
+                type: 'pie',
+                marker: {
+                    colors: ['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3'],
+                    line: {
+                        color: '#ffffff',
+                        width: 2
+                    }
+                }
+            };
+            const layout = {
+                title: 'Emissions by Gas Type',
+                font: { family: 'Comic Sans MS, cursive' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+            Plotly.newPlot('emissionsByGasType', [trace], layout, {responsive: true});
+        }
+
+        function createFallingLeaves() {
+            const container = document.body;
+            for (let i = 0; i < 10; i++) {
+                const leaf = document.createElement('div');
+                leaf.className = 'leaf';
+                leaf.style.left = `${Math.random() * 100}vw`;
+                leaf.style.animationDelay = `${Math.random() * 10}s`;
+                container.appendChild(leaf);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createEmissionsByCountryChart();
+            createEmissionsTrendChart();
+            createEmissionsByGasTypeChart();
+            createFallingLeaves();
+        });
     </script>
 </body>
 </html>

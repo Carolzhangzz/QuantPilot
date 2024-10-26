@@ -190,10 +190,9 @@ const generateCode = async (req, res) => {
 
       3. Required Components:
          - At least Three interactive Plotly.js charts using the provided data
-         - Dynamic narrative sections
+         - Narrative data storytelling sections for each chart 
          - Interactive filters and tooltips
          - Animated transitions
-         - Summary statistics and insights
 
       4. Must Include:
          - Environmental theme
