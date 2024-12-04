@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_file, make_response
 from werkzeug.utils import secure_filename
-from functools import wraps
+import matplotlib.pyplot as plt
 import os
 from PIL import Image
 from io import BytesIO
@@ -11,7 +11,6 @@ import pandas as pd
 from dotenv import load_dotenv
 from flask_cors import CORS
 import traceback
-import csv
 import json
 import numpy as np
 
@@ -26,49 +25,23 @@ if not openai_api_key:
 # 设置 OpenAI API 密钥
 os.environ['OPENAI_API_KEY'] = openai_api_key
 
-
-# CORS Setup
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:8080"}})
 
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', 'http://127.0.0.1:8080')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
+# 简化的CORS配置
+CORS(app, 
+    origins="http://127.0.0.1:8080",
+    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization", "Accept"])
 
-
+# Configure matplotlib
 matplotlib.use('Agg')
 
-
+# Configure upload folder
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+# Initialize LIDA
 lida = Manager(text_gen=llm("openai"))
-
-def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = 'http://127.0.0.1:8080'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return response
-
-def cors_enabled(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if request.method == 'OPTIONS':
-            resp = make_response()
-            add_cors_headers(resp)
-            return resp
-        return add_cors_headers(f(*args, **kwargs))
-    return wrapper
-
-@app.route('/generate_summary', methods=['OPTIONS'])
-def handle_options_request():
-    response = app.make_default_options_response()
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-    response.headers.add('Access-Control-Allow-Methods', 'POST,OPTIONS')
-    return response
 
 @app.route('/generate_summary', methods=['POST'])
 def generate_summary():
@@ -84,12 +57,13 @@ def generate_summary():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
-        data = pd.read_csv(filepath)
-
-        summary = lida.summarize(filepath)
-        goals = lida.goals(summary, n=4)
-
-        return jsonify({'summary': summary, 'goals': goals}), 200
+        try:
+            data = pd.read_csv(filepath)
+            summary = lida.summarize(filepath)
+            goals = lida.goals(summary, n=4)
+            return jsonify({'summary': summary, 'goals': goals}), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
     return jsonify({'error': 'Invalid file type, only CSV allowed'}), 400
 
@@ -97,8 +71,6 @@ def generate_summary():
 def generate_image():
     instruction = request.form.get('instruction')
     user_query = request.form.get('user_query')
-    # if not instruction or not user_query:
-    # return jsonify({'error': 'Instruction and user query are required'}), 400
 
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -112,10 +84,8 @@ def generate_image():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
-        # data = pd.read_csv(filepath)
-
         textgen_config = TextGenerationConfig(n=1, temperature=0.2, use_cache=True)
-        summary = lida.summarize(filepath,textgen_config=textgen_config, summary_method="default")
+        summary = lida.summarize(filepath, textgen_config=textgen_config, summary_method="default")
         goals = lida.goals(summary, n=2, textgen_config=textgen_config)
 
         if user_query:
@@ -137,7 +107,6 @@ def generate_image():
 
     return jsonify({'error': 'Invalid file type, only CSV files are allowed'}), 400
 
-
 @app.route('/read_csv_header', methods=['POST'])
 def read_csv_header():
     data = request.json
@@ -153,7 +122,6 @@ def read_csv_header():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/run_python_code', methods=['POST'])
 def run_python_code():
     file_path = request.form.get('file')
@@ -163,38 +131,44 @@ def run_python_code():
         return jsonify({'error': f'File not found: {file_path}'}), 400
 
     try:
-        # Read file content
         data = pd.read_csv(file_path)
-        
-        # Get list of available columns
         available_columns = data.columns.tolist()
 
-        # Create a clean namespace
+        # 修改输入的代码，确保结果存储在 result_ 变量中
+        if "=" not in python_code:
+            # 如果代码中没有赋值操作，将整个表达式赋值给 result_output
+            modified_code = f"result_output = {python_code}"
+        else:
+            modified_code = python_code.replace("plt.savefig", "result_output = plt.savefig")
+
+        # 添加必要的导入
         local_namespace = {
-            'pd': pd, 
-            'data': data
+            'pd': pd,
+            'data': data,
+            'plt': plt,
+            'np': np
         }
 
-        # 执行代码并收集结果
-        exec(python_code, local_namespace)
+        print(f"Executing code: {modified_code}")  # 调试输出
+        
+        exec(modified_code, local_namespace)
 
-        # 清理和序列化结果
         cleaned_results = {}
         
-        # 查找所有 result_ 开头的变量
         for var_name, var_value in local_namespace.items():
             if var_name.startswith('result_'):
                 if isinstance(var_value, dict):
-                    # 如果已经是字典形式，直接使用
                     cleaned_results[var_name] = var_value
                 elif isinstance(var_value, (pd.Series, pd.DataFrame)):
-                    # 将 Pandas 对象转换为字典
                     cleaned_results[var_name] = var_value.to_dict()
                 elif isinstance(var_value, (int, float, str, bool)):
-                    # 基本数据类型直接保存
                     cleaned_results[var_name] = var_value
+                elif hasattr(var_value, 'savefig'):  # 处理 matplotlib 图形
+                    buf = BytesIO()
+                    var_value.savefig(buf, format='png')
+                    buf.seek(0)
+                    cleaned_results[var_name] = base64.b64encode(buf.getvalue()).decode('utf-8')
                 else:
-                    # 其他类型转换为字符串
                     cleaned_results[var_name] = str(var_value)
 
         if not cleaned_results:
@@ -207,51 +181,19 @@ def run_python_code():
 
     except Exception as e:
         error_traceback = traceback.format_exc()
+        print(f"Error executing code: {str(e)}")  # 调试输出
+        print(f"Traceback: {error_traceback}")    # 调试输出
         return jsonify({
             'error': str(e),
             'traceback': error_traceback,
             'available_columns': available_columns
         }), 500
 
-
-def make_serializable(obj):
-    if isinstance(obj, (pd.DataFrame, pd.Series)):
-        return obj.to_dict()
-    elif isinstance(obj, (int, float, str, bool, type(None))):
-        return obj
-    elif isinstance(obj, (list, tuple)):
-        return [make_serializable(item) for item in obj]
-    elif isinstance(obj, dict):
-        return {str(k): make_serializable(v) for k, v in obj.items()}
-    else:
-        return str(obj)
-
-
-def auto_correct_code(code, available_columns):
-    warnings = []
-    new_code_lines = []
-
-    for line in code.split('\n'):
-        if "data['" in line:
-            column = line.split("data['")[1].split("']")[0]
-            if column not in available_columns:
-                close_match = find_close_match(column, available_columns)
-                if close_match:
-                    line = line.replace(f"data['{column}']", f"data['{close_match}']")
-                    warnings.append(f"Column '{column}' not found. Using '{close_match}' instead.")
-                else:
-                    warnings.append(f"Column '{column}' not found and no close match available. This may cause an error.")
-        new_code_lines.append(line)
-
-    return '\n'.join(new_code_lines), warnings
-
 def find_close_match(column, available_columns):
-    # This is a basic implementation. You might want to use more sophisticated methods like fuzzy matching.
     for available_column in available_columns:
         if column.lower() in available_column.lower() or available_column.lower() in column.lower():
             return available_column
     return None
-
 
 @app.route('/')
 def index():

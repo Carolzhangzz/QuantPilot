@@ -142,6 +142,7 @@ export async function callGenerateVisualizationCode(
   }
 }
 
+
 export async function callGeneratePRD(prompt, summary, allResults) {
   try {
     console.log("Attempting to call generate-prd API...");
@@ -331,6 +332,7 @@ export async function DataToWeb(_storedPRD, userPrompt = null, allResults = null
       callApiButton.disabled = false;
   }
 }
+
 // export async function DataToWeb(
 //   _storedPRD,
 //   userPrompt = null,

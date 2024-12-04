@@ -13,7 +13,7 @@ body {
 #container {
   width: 100%;
   min-height: 100vh;
-  background-image: url("./images/climate2.png");
+  background-image: url("./images/data9.png");
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -421,7 +421,7 @@ h2 {
     position: fixed;
     top: 5px;
     max-width: 600px;
-    left: 56px;
+    left: 90px;
     color: white;
 }
 

@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderFileUpload(fileUploadContainer, handleFileUploaded);
 });
 
-
+// Add this function near the top of your file with other function definitions
 function showSummaryAndCallApiButton(summary) {
   // 显示 summary
   // const summaryContainer = document.createElement('div');
@@ -40,7 +40,6 @@ function showSummaryAndCallApiButton(summary) {
   const callApiButton = document.getElementById('call-api');
   callApiButton.style.display = 'flex';
 }
-
 
 // Custom alert function for better formatting
 function showFormattedAlert(title, content) {
@@ -214,6 +213,7 @@ document.getElementById("call-api").addEventListener("click", async () => {
     alert("An error occurred. Please try again.");
   }
 });
+
 
 //show progress bar when the API is called
 function showProgressBar() {

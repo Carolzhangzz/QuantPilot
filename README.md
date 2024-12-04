@@ -1,68 +1,153 @@
-# Datavis Diffusion: Exploring Intent-Based User Interfaces through Sketching to Coding Task Transition
+# Datavis Diffusion
 
-# Requirements
-* Install Node.js (through Homebrew or download from [http://nodejs.org/](http://nodejs.org/)). If you want to install through Homebrew, you need to download Homebrew first.
-* Install npm (through [https://www.npmjs.com/get-npm](https://www.npmjs.com/get-npm)).
+A data visualization tool for junior researchers leveraging AI capabilities.
 
-Open the terminal on your computer or use the terminal provided by your integrated development environment (e.g., Visual Studio Code). 
-Ensure that the terminal is opened in the project folder directory.
+## Prerequisites
 
-## API Key Requirements
+- Node.js (v18.0.0 or higher)
+  - Install via [official website](http://nodejs.org/) or package managers:
+    ```bash
+    # macOS (Homebrew)
+    brew install node
 
-#### Local Deployment Instructions
+    # Windows (Chocolatey)
+    choco install nodejs
 
-1. Navigate to the `.env` file in your project directory. 
-2. Insert your API key information using the following format (you could get ANTHROPIC API Key from : [anthropic.com](https://console.anthropic.com/settings/keys)):
+    # Linux (apt)
+    sudo apt install nodejs
+    ```
+- npm (normally bundled with Node.js)
+- Python 3.8+ (for backend server)
 
-ANTHROPIC_API_KEY=YOUR_ANTHROPIC_API_KEY
+## Project Setup
 
-3. Save the `.env` file after adding your API keys.
+### Environment Configuration
 
-**Note:** Keep your API keys confidential and never share them publicly.
-
-<!-- Get OpenAI API from : [openai.com](https://platform.openai.com/api-keys) -->
-
-<!--Get PEXELS API from : [pexels.com](https://help.pexels.com/hc/en-us/articles/900004904026-How-do-I-get-an-API-key)-->
-
-## Module Requirements
-
-## Installation
-
-Before running the program, follow these steps: 
-
-1. Install dependencies:
-
- `npm install`
-
-2. If you encounter errors like "Cannot find module '@module_name'", install the specific module:
-
-For example :  
-
-```
-npm install @anthropic-ai/sdk
-npm install dotenv
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/datavis-diffusion.git
+cd datavis-diffusion
 ```
 
-(Add any other specific modules as needed)
+2. Configure environment variables in the backend directory:
+```bash
+cd backend
+cp .env.example .env
+```
+
+3. Add your API credentials to `backend/.env`:
+```plaintext
+# Get OpenAI API key from: https://platform.openai.com/api-keys
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Get Anthropic API key from: https://console.anthropic.com/settings/keys
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+```
+
+> **Security Note**: Never commit the `.env` file or expose API keys in public repositories.
+
+### Dependencies Installation
+
+#### Backend Dependencies
+
+```bash
+cd backend
+npm install @anthropic-ai/sdk openai axios dotenv express cors
+# or
+npm install  # if package.json is present
+```
+
+#### Frontend Dependencies
+
+```bash
+cd frontend
+npm install
+```
 
 ## Running the Application
 
-Navigate to the `/backend` directory (cd backend), then use the command: 
+### Backend Services
 
-### `node server.js`
+Start the Express.js server:
+```bash
+cd backend
+node server.js
+```
 
-Navigate to the `/backend/server.py` directory (cd server.py), then use the command: 
+Start the Python server (in a separate terminal):
+```bash
+cd backend
+python server.py
+```
 
-### `python server.py`
+### Frontend Development Server
 
-Navigate to the `/frontend` directory (cd frontend), then use the command: 
+```bash
+cd frontend
+npx live-server
+```
 
-### `npx live-server`
+The application will automatically open in your default browser at `http://localhost:8080`.
 
+## Project Structure
 
-You should now see the application in your browser.
+```
+datavis-diffusion/
+├── backend/
+│   ├── server.js
+│   ├── server.py
+│   ├── .env
+│   ├── .env.example
+│   └── package.json
+├── frontend/
+│   ├── index.html
+│   ├── styles/
+│   └── scripts/
+├── .gitignore
+└── README.md
+```
 
-## Customization 
+## Development
 
-To edit the page, modify the `frontend/index.html` file.
+### Customization
 
+- Frontend modifications should be made in `frontend/index.html`
+- Styling changes belong in `frontend/styles/`
+- Backend API endpoints can be modified in `backend/server.js`
+
+### Best Practices
+
+1. Always create feature branches for new development
+2. Follow the established code style guide
+3. Write tests for new features
+4. Update documentation as needed
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. Module not found errors:
+```bash
+npm install [missing-module-name]
+```
+
+2. Port conflicts:
+- Check if other services are using the required ports
+- Modify port numbers in configuration files
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## API Documentation
+
+For detailed API documentation, refer to:
+- [OpenAI API](https://platform.openai.com/docs)
+- [Pexels API](https://www.pexels.com/api/documentation/)
+- [Anthropic Claude API](https://console.anthropic.com/docs)

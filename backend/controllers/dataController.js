@@ -49,8 +49,11 @@ const generateVisualizationCode = async (req, res) => {
       });
     }
 
-    const prompt = `
-  You are an expert in data visualization and data analysis, known for your ability to creatively extract insights from complex datasets. Your task is to generate **only Python code** for data analysis and preparation based on the following user prompt, data summary, and CSV header.
+    
+  const prompt = `
+
+  You are an expert in data visualization and data analysis, known for your ability to creatively extract insights from complex datasets. 
+  Your task is to generate **only Python code** for data analysis and preparation based on the following user prompt, data summary, and CSV header.
 
   **User's Prompt (Top Priority)**: "${userPrompt}"
 
@@ -71,10 +74,11 @@ const generateVisualizationCode = async (req, res) => {
   5. Return a JSON object where each key describes the analysis and the value is the corresponding Python code, formatted as a single line of code. Ensure the code is **JSON-serializable** and does not use multi-line formatting, triple quotes, or special characters that would break JSON structure.
 
   6. **No explanations, comments, or import statements**. The focus is on preparing the data for analysis and ensuring JSON-serializable outputs.
-
+   
   **Desired Format** (replace placeholders with actual CSV headers):
      - Keys should relate directly to the data or insight, such as using column names or analysis methods in their naming.
      - Prioritize the user's request first, then add creative insights based on the data summary.
+
     {
       "analysis_by_column1_value_counts": "result_1 = data['column1'].value_counts().to_dict()",
       "group_analysis_by_column2_and_column3": "result_2 = data.groupby(['column2', 'column3'])['column2'].count().unstack().to_dict()",
@@ -87,7 +91,7 @@ const generateVisualizationCode = async (req, res) => {
 
     console.log("Sending request to Anthropic API...");
     const message = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 2000,
       messages: [{ role: "user", content: prompt }],
     });
