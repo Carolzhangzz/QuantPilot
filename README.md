@@ -1,5 +1,8 @@
 # Datavis Diffusion
 
+![Uploading image.png…]()
+
+
 A data visualization tool for junior researchers leveraging AI capabilities.
 
 ## Prerequisites
