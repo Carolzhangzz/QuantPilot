@@ -1,6 +1,7 @@
 # Datavis Diffusion
 
-![Uploading image.png…]()
+ <img width="1512" alt="image" src="https://github.com/user-attachments/assets/c3c05a36-41e2-4c2b-ac1a-a687eff938e9" />
+
 
 
 A data visualization tool for junior researchers leveraging AI capabilities.
